@@ -2,52 +2,100 @@ import 'dart:async';
 
 import 'package:attendance_tracker/backend.dart';
 import 'package:attendance_tracker/keyboard.dart';
+import 'package:attendance_tracker/settings.dart';
+import 'package:attendance_tracker/settings_page.dart';
 import 'package:attendance_tracker/string_ext.dart';
 import 'package:attendance_tracker/widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:from_css_color/from_css_color.dart';
 import 'package:intl/intl.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  final settings = SettingsManager();
+  await settings.init();
+
+  final controller = ThemeController();
+  controller.updateTheme(settings.getValue<String>('app.theme.mode') ?? "dark");
+  controller.updateAccent(
+    settings.getValue<String>('app.theme.accent') ?? "blue",
+  );
+
+  runApp(MyApp(settings, controller));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyApp extends StatefulWidget {
+  const MyApp(this.settingsManager, this.themeController, {super.key});
 
-  // This widget is the root of your application.
+  final SettingsManager settingsManager;
+  final ThemeController themeController;
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    final adjustedRed = HSVColor.fromColor(
-      Colors.red,
-    ).withSaturation(0.65).toColor();
+    return ValueListenableBuilder(
+      valueListenable: widget.themeController.themeMode,
+      builder: (context, value, child) {
+        return ValueListenableBuilder(
+          valueListenable: widget.themeController.accentColor,
+          builder: (context, value, child) {
+            final adjustedColor = HSVColor.fromColor(
+              value,
+            ).withSaturation(0.65).toColor();
 
-    final darkColorScheme = ColorScheme.fromSeed(
-      seedColor: adjustedRed,
-      brightness: Brightness.dark,
-      primary: adjustedRed,
-    );
+            final darkColorScheme = ColorScheme.fromSeed(
+              seedColor: adjustedColor,
+              brightness: Brightness.dark,
+              primary: adjustedColor,
+            );
 
-    final darkTheme = ThemeData(
-      colorScheme: darkColorScheme,
-      useMaterial3: true,
-      scaffoldBackgroundColor: darkColorScheme.surface,
-      appBarTheme: AppBarTheme(
-        backgroundColor: darkColorScheme.primary,
-        foregroundColor: darkColorScheme.onPrimary,
-      ),
-    );
+            final lightColorScheme = ColorScheme.fromSeed(
+              seedColor: adjustedColor,
+              brightness: Brightness.light,
+              primary: adjustedColor,
+            );
 
-    return MaterialApp(
-      title: 'Attendance Tracker',
-      themeMode: ThemeMode.dark,
-      darkTheme: darkTheme,
-      home: HomePage(),
+            final darkTheme = ThemeData(
+              colorScheme: darkColorScheme,
+              useMaterial3: true,
+              scaffoldBackgroundColor: darkColorScheme.surface,
+              appBarTheme: AppBarTheme(
+                backgroundColor: darkColorScheme.primary,
+                foregroundColor: darkColorScheme.onPrimary,
+              ),
+            );
+
+            final lightTheme = ThemeData(
+              colorScheme: lightColorScheme,
+              useMaterial3: true,
+              scaffoldBackgroundColor: lightColorScheme.surface,
+              appBarTheme: AppBarTheme(
+                backgroundColor: lightColorScheme.primary,
+                foregroundColor: lightColorScheme.onPrimary,
+              ),
+            );
+
+            return MaterialApp(
+              title: 'Attendance Tracker',
+              themeMode: widget.themeController.themeMode.value,
+              darkTheme: darkTheme,
+              theme: lightTheme,
+              home: HomePage(widget.themeController),
+            );
+          },
+        );
+      },
     );
   }
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage(this.themeController, {super.key});
+
+  final ThemeController themeController;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -82,7 +130,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _timer.cancel(); // Always cancel timers to avoid memory leaks
+    _timer.cancel();
     super.dispose();
   }
 
@@ -122,7 +170,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   icon: Icon(Icons.more_vert),
                   tooltip: "",
                   itemBuilder: (context) => [
-                    PopupMenuItem(value: 'settings', child: Text('Settings')),
+                    PopupMenuItem(
+                      value: 'settings',
+                      child: Text('Settings'),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                SettingsPage(widget.themeController),
+                          ),
+                        );
+                      },
+                    ),
                     PopupMenuItem(
                       value: 'about',
                       child: Text('About'),
@@ -365,9 +425,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                       .last
                                                       .capitalize(),
                                                 ),
-                                                onTap: () {
-                                                  // Handle selection
-                                                },
+                                                onTap: () {},
                                               );
                                             },
                                           );
