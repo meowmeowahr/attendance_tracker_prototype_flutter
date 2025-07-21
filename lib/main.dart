@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:attendance_tracker/backend.dart';
+import 'package:attendance_tracker/keyboard.dart';
 import 'package:attendance_tracker/string_ext.dart';
 import 'package:attendance_tracker/widgets.dart';
 import 'package:flutter/material.dart';
@@ -246,7 +247,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 children: [
                                   Padding(
                                     padding: const EdgeInsets.all(8.0),
-                                    child: TextField(
+                                    child: VirtualTextField(
                                       decoration: InputDecoration(
                                         hintText: 'Search name...',
                                         prefixIcon: Icon(Icons.search),
@@ -264,6 +265,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                     ),
                                   ),
                                   Expanded(
+                                    flex: 2,
                                     child: FutureBuilder(
                                       future: _attendanceFuture,
                                       builder: (context, snapshot) {
@@ -359,6 +361,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                           );
                                         }
                                       },
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height: 200,
+                                    child: Container(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerLowest,
+                                      child: Center(
+                                        child: VirtualKeyboard(
+                                          rootLayoutPath:
+                                              "assets/layouts/en-US.xml",
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ],
