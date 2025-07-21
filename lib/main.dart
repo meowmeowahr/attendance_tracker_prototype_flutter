@@ -123,7 +123,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   tooltip: "",
                   itemBuilder: (context) => [
                     PopupMenuItem(value: 'settings', child: Text('Settings')),
-                    PopupMenuItem(value: 'about', child: Text('About')),
+                    PopupMenuItem(
+                      value: 'about',
+                      child: Text('About'),
+                      onTap: () {
+                        showAboutDialog(
+                          context: context,
+                          applicationName: 'Attendance Tracker',
+                          applicationVersion: '1.0.0',
+                          applicationIcon: FlutterLogo(size: 64),
+                          children: [],
+                        );
+                      },
+                    ),
                   ],
                 ),
                 SizedBox(width: 8),
