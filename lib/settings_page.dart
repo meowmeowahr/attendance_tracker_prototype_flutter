@@ -165,8 +165,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: index < _enteredPin.length
-                            ? Theme.of(context).primaryColor
-                            : Colors.grey.withAlpha(100),
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.surfaceBright,
                       ),
                     ),
                   ),

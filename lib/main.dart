@@ -5,6 +5,7 @@ import 'package:attendance_tracker/keyboard.dart';
 import 'package:attendance_tracker/settings.dart';
 import 'package:attendance_tracker/settings_page.dart';
 import 'package:attendance_tracker/string_ext.dart';
+import 'package:attendance_tracker/user_flow.dart';
 import 'package:attendance_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -106,7 +107,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late TabController _currentBodyController;
 
   late AttendanceTrackerBackend _backend;
-  late ValueNotifier<List<Member>> _attendance;
 
   String _searchQuery = '';
   late ValueNotifier<List<Member>> filteredMembers;
@@ -115,9 +115,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _backend = AttendanceTrackerBackend();
-    _attendance = ValueNotifier(_backend.fetchAttendanceData());
     filteredMembers = ValueNotifier(
-      _attendance.value
+      _backend.attendance.value
           .where(
             (member) =>
                 member.name.toLowerCase().contains(_searchQuery.toLowerCase()),
@@ -139,6 +138,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void dispose() {
     _timer.cancel();
     super.dispose();
+  }
+
+  void beginUserFlow(BuildContext context, Member user) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => UserFlow(user)),
+    );
   }
 
   @override
@@ -242,10 +248,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 child: FilledButton(
                                   onPressed: () {
                                     setState(() {
-                                      _attendance.value = _backend
-                                          .fetchAttendanceData();
-                                    });
-                                    setState(() {
                                       _currentBodyController.index = 1;
                                     });
                                   },
@@ -345,7 +347,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                       ),
                                       onChanged: (value) {
                                         _searchQuery = value;
-                                        filteredMembers.value = _attendance
+                                        filteredMembers.value = _backend
+                                            .attendance
                                             .value
                                             .where(
                                               (member) => member.name
@@ -361,7 +364,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                   Expanded(
                                     flex: 2,
                                     child: ValueListenableBuilder<List<Member>>(
-                                      valueListenable: _attendance,
+                                      valueListenable: _backend.attendance,
                                       builder: (context, attendanceValue, child) {
                                         return ValueListenableBuilder(
                                           valueListenable: filteredMembers,
@@ -431,7 +434,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                               .capitalize()
                                                         : "${member.privilege.toString().split('.').last.capitalize()} · ${member.location!}",
                                                   ),
-                                                  onTap: () {},
+                                                  onTap: () {
+                                                    beginUserFlow(
+                                                      context,
+                                                      member,
+                                                    );
+                                                  },
                                                 );
                                               },
                                             );

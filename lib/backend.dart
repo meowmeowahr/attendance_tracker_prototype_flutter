@@ -1,5 +1,7 @@
 import 'dart:collection';
 
+import 'package:flutter/cupertino.dart';
+
 enum AttendanceStatus { active, inactive }
 
 enum MemberPrivilege { admin, student }
@@ -37,7 +39,7 @@ class ClockOutEvent {
 class AttendanceTrackerBackend {
   final _clockInQueue = Queue<ClockInEvent>();
   final _clockOutQueue = Queue<ClockOutEvent>();
-  List<Member> _members = [
+  ValueNotifier<List<Member>> attendance = ValueNotifier([
     Member(
       1,
       'John Middle Doe',
@@ -47,19 +49,15 @@ class AttendanceTrackerBackend {
     ),
     Member(2, 'Jane Smith', AttendanceStatus.inactive),
     Member(3, 'Alice Johnson', AttendanceStatus.active, location: "Shop"),
-  ];
-
-  List<Member> fetchAttendanceData() {
-    return _members;
-  }
+  ]);
 
   Future<List<String>> fetchNames() async {
     await Future.delayed(Duration(seconds: 1));
-    return _members.map((member) => member.name).toList();
+    return attendance.value.map((member) => member.name).toList();
   }
 
   void clockOut(int memberId) {
-    if (!_members.any((member) => member.id == memberId)) {
+    if (!attendance.value.any((member) => member.id == memberId)) {
       throw Exception('Member with ID $memberId not found');
     }
 
@@ -69,20 +67,22 @@ class AttendanceTrackerBackend {
       _clockInQueue.removeWhere((e) => e.memberId == memberId);
     }
 
-    final memberIndex = _members.indexWhere((member) => member.id == memberId);
+    final memberIndex = attendance.value.indexWhere(
+      (member) => member.id == memberId,
+    );
     if (memberIndex != -1) {
-      _members[memberIndex] = Member(
-        _members[memberIndex].id,
-        _members[memberIndex].name,
+      attendance.value[memberIndex] = Member(
+        attendance.value[memberIndex].id,
+        attendance.value[memberIndex].name,
         AttendanceStatus.inactive,
-        location: _members[memberIndex].location,
-        privilege: _members[memberIndex].privilege,
+        location: attendance.value[memberIndex].location,
+        privilege: attendance.value[memberIndex].privilege,
       );
     }
   }
 
   void clockIn(int memberId, String location) {
-    if (!_members.any((member) => member.id == memberId)) {
+    if (!attendance.value.any((member) => member.id == memberId)) {
       throw Exception('Member with ID $memberId not found');
     }
 
@@ -92,14 +92,16 @@ class AttendanceTrackerBackend {
       _clockOutQueue.removeWhere((e) => e.memberId == memberId);
     }
 
-    final memberIndex = _members.indexWhere((member) => member.id == memberId);
+    final memberIndex = attendance.value.indexWhere(
+      (member) => member.id == memberId,
+    );
     if (memberIndex != -1) {
-      _members[memberIndex] = Member(
-        _members[memberIndex].id,
-        _members[memberIndex].name,
+      attendance.value[memberIndex] = Member(
+        attendance.value[memberIndex].id,
+        attendance.value[memberIndex].name,
         AttendanceStatus.active,
         location: location,
-        privilege: _members[memberIndex].privilege,
+        privilege: attendance.value[memberIndex].privilege,
       );
     }
   }
