@@ -109,14 +109,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late List<Member> _attendance;
 
   String _searchQuery = '';
-  List<Member> filteredMembers = [];
+  ValueNotifier<List<Member>> filteredMembers = ValueNotifier([]);
 
   @override
   void initState() {
     super.initState();
     _backend = AttendanceTrackerBackend();
     _attendance = _backend.fetchAttendanceData();
-    filteredMembers = _attendance
+    filteredMembers.value = _attendance
         .where(
           (member) =>
               member.name.toLowerCase().contains(_searchQuery.toLowerCase()),
@@ -337,67 +337,85 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                         ),
                                       ),
                                       onChanged: (value) {
-                                        setState(() {
-                                          _searchQuery = value;
-                                        });
+                                        _searchQuery = value;
+                                        filteredMembers.value = _attendance
+                                            .where(
+                                              (member) => member.name
+                                                  .toLowerCase()
+                                                  .contains(
+                                                    _searchQuery.toLowerCase(),
+                                                  ),
+                                            )
+                                            .toList();
                                       },
                                     ),
                                   ),
                                   Expanded(
                                     flex: 2,
-                                    child: ListView.builder(
-                                      itemCount: filteredMembers.length,
-                                      itemBuilder: (context, index) {
-                                        final member = filteredMembers[index];
-                                        return ListTile(
-                                          leading: Stack(
-                                            alignment: Alignment.bottomRight,
-                                            children: [
-                                              CircleAvatar(
-                                                backgroundColor:
-                                                    HSVColor.fromColor(
-                                                          ColorScheme.fromSeed(
-                                                            seedColor: Color(
-                                                              member.hashCode,
-                                                            ).withAlpha(255),
+                                    child: ValueListenableBuilder<List<Member>>(
+                                      valueListenable: filteredMembers,
+                                      builder: (context, value, child) {
+                                        return ListView.builder(
+                                          itemCount: value.length,
+                                          itemBuilder: (context, index) {
+                                            final member = value[index];
+                                            return ListTile(
+                                              leading: Stack(
+                                                alignment:
+                                                    Alignment.bottomRight,
+                                                children: [
+                                                  CircleAvatar(
+                                                    backgroundColor:
+                                                        HSVColor.fromColor(
+                                                              ColorScheme.fromSeed(
+                                                                seedColor: Color(
+                                                                  member
+                                                                      .hashCode,
+                                                                ).withAlpha(255),
 
-                                                            brightness:
-                                                                Brightness.dark,
-                                                          ).primary,
-                                                        )
-                                                        .withAlpha(0.5)
-                                                        .withSaturation(0.6)
-                                                        .toColor(),
-                                                child: Text(
-                                                  member.name
-                                                      .split(' ')
-                                                      .map((part) => part[0])
-                                                      .take(2)
-                                                      .join(),
-                                                ),
+                                                                brightness:
+                                                                    Brightness
+                                                                        .dark,
+                                                              ).primary,
+                                                            )
+                                                            .withAlpha(0.5)
+                                                            .withSaturation(0.6)
+                                                            .toColor(),
+                                                    child: Text(
+                                                      member.name
+                                                          .split(' ')
+                                                          .map(
+                                                            (part) => part[0],
+                                                          )
+                                                          .take(2)
+                                                          .join(),
+                                                    ),
+                                                  ),
+                                                  Icon(
+                                                    Icons.circle,
+                                                    color:
+                                                        member.status ==
+                                                            AttendanceStatus
+                                                                .active
+                                                        ? Colors.green
+                                                        : Colors.red,
+                                                    size: 12,
+                                                  ),
+                                                ],
                                               ),
-                                              Icon(
-                                                Icons.circle,
-                                                color:
-                                                    member.status ==
-                                                        AttendanceStatus.active
-                                                    ? Colors.green
-                                                    : Colors.red,
-                                                size: 12,
+                                              title: Text(member.name),
+                                              subtitle: Text(
+                                                member.location == null
+                                                    ? member.privilege
+                                                          .toString()
+                                                          .split('.')
+                                                          .last
+                                                          .capitalize()
+                                                    : "${member.privilege.toString().split('.').last.capitalize()} · ${member.location!}",
                                               ),
-                                            ],
-                                          ),
-                                          title: Text(member.name),
-                                          subtitle: Text(
-                                            member.location == null
-                                                ? member.privilege
-                                                      .toString()
-                                                      .split('.')
-                                                      .last
-                                                      .capitalize()
-                                                : "${member.privilege.toString().split('.').last.capitalize()} · ${member.location!}",
-                                          ),
-                                          onTap: () {},
+                                              onTap: () {},
+                                            );
+                                          },
                                         );
                                       },
                                     ),
