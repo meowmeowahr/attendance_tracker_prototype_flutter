@@ -7,7 +7,6 @@ import 'package:attendance_tracker/settings_page.dart';
 import 'package:attendance_tracker/string_ext.dart';
 import 'package:attendance_tracker/widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:from_css_color/from_css_color.dart';
 import 'package:intl/intl.dart';
 
 void main() async {
@@ -419,11 +418,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                 ),
                                                 title: Text(member.name),
                                                 subtitle: Text(
-                                                  member.privilege
-                                                      .toString()
-                                                      .split('.')
-                                                      .last
-                                                      .capitalize(),
+                                                  member.location == null
+                                                      ? member.privilege
+                                                            .toString()
+                                                            .split('.')
+                                                            .last
+                                                            .capitalize()
+                                                      : "${member.privilege.toString().split('.').last.capitalize()} · ${member.location!}",
                                                 ),
                                                 onTap: () {},
                                               );
