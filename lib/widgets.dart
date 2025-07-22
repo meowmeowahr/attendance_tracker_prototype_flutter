@@ -50,39 +50,79 @@ class AdminStriper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _StripePainter(),
-      child: Container(
-        height: 24,
-        alignment: Alignment.center,
-        child: Container(
-          color: Colors.black,
-          child: Padding(
-            padding: const EdgeInsets.only(left: 8.0, right: 8.0),
-            child: const Text(
-              'ADMIN',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                fontSize: 18,
-                letterSpacing: 2,
-              ),
+    // Measure the text size
+    final textPainter = TextPainter(
+      text: const TextSpan(
+        text: 'ADMIN',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          fontSize: 18,
+          letterSpacing: 2,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    final textWidth =
+        textPainter.width + 16.0; // Add padding (8.0 left + 8.0 right)
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Background stripes
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CustomPaint(
+              painter: _StripePainter(context, textWidth, isLeft: true),
+              child: SizedBox(height: 24, width: textWidth / 2),
+            ),
+            SizedBox(width: textWidth), // Reserve space for text
+            CustomPaint(
+              painter: _StripePainter(context, textWidth, isLeft: false),
+              child: SizedBox(height: 24, width: textWidth / 2),
+            ),
+          ],
+        ),
+        // Foreground text
+        Padding(
+          padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+          child: Text(
+            'ADMIN',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 18,
+              letterSpacing: 2,
+              backgroundColor: Theme.of(context).colorScheme.surface,
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
 
 class _StripePainter extends CustomPainter {
+  final BuildContext context;
+  final double textWidth;
+  final bool isLeft;
+
+  _StripePainter(this.context, this.textWidth, {required this.isLeft});
+
   @override
   void paint(Canvas canvas, Size size) {
     const stripeWidth = 20.0;
     final paint = Paint();
     final path = Path();
 
-    for (double x = -size.height; x < size.width; x += stripeWidth * 2) {
+    // Calculate the stripe boundaries based on text width
+    final halfTextWidth = textWidth / 2;
+    final startX = isLeft ? -size.height : halfTextWidth;
+    final endX = isLeft ? halfTextWidth : halfTextWidth + size.width;
+
+    for (double x = startX; x < endX; x += stripeWidth * 2) {
       path.reset();
       path.moveTo(x, 0);
       path.lineTo(x + stripeWidth, 0);
@@ -90,7 +130,7 @@ class _StripePainter extends CustomPainter {
       path.lineTo(x - size.height, size.height);
       path.close();
 
-      paint.color = Colors.yellow;
+      paint.color = Theme.of(context).colorScheme.tertiary;
       canvas.drawPath(path, paint);
 
       path.reset();
@@ -100,7 +140,7 @@ class _StripePainter extends CustomPainter {
       path.lineTo(x + stripeWidth - size.height, size.height);
       path.close();
 
-      paint.color = Colors.black;
+      paint.color = Theme.of(context).colorScheme.surface;
       canvas.drawPath(path, paint);
     }
   }

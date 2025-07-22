@@ -106,14 +106,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late TabController _currentBodyController;
 
   late AttendanceTrackerBackend _backend;
-  late Future<List<Member>> _attendanceFuture;
+  late List<Member> _attendance;
+
   String _searchQuery = '';
+  List<Member> filteredMembers = [];
 
   @override
   void initState() {
     super.initState();
     _backend = AttendanceTrackerBackend();
-    _attendanceFuture = _backend.fetchAttendanceData();
+    _attendance = _backend.fetchAttendanceData();
+    filteredMembers = _attendance
+        .where(
+          (member) =>
+              member.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+        )
+        .toList();
     _now = DateTime.now();
     _timer = Timer.periodic(const Duration(seconds: 1), (Timer timer) {
       setState(() {
@@ -227,7 +235,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 child: FilledButton(
                                   onPressed: () {
                                     setState(() {
-                                      _attendanceFuture = _backend
+                                      _attendance = _backend
                                           .fetchAttendanceData();
                                     });
                                     setState(() {
@@ -337,100 +345,60 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                   ),
                                   Expanded(
                                     flex: 2,
-                                    child: FutureBuilder(
-                                      future: _attendanceFuture,
-                                      builder: (context, snapshot) {
-                                        if (snapshot.connectionState ==
-                                            ConnectionState.waiting) {
-                                          return Center(
-                                            child: CircularProgressIndicator(),
-                                          );
-                                        } else if (snapshot.hasError) {
-                                          return Center(
-                                            child: Text(
-                                              'Error: ${snapshot.error}',
-                                            ),
-                                          );
-                                        } else {
-                                          final attendanceData = snapshot.data;
-                                          List<Member> filteredMembers =
-                                              attendanceData
-                                                  ?.where(
-                                                    (member) => member.name
-                                                        .toLowerCase()
-                                                        .contains(
-                                                          _searchQuery
-                                                              .toLowerCase(),
-                                                        ),
-                                                  )
-                                                  .toList() ??
-                                              [];
-                                          return ListView.builder(
-                                            itemCount: filteredMembers.length,
-                                            itemBuilder: (context, index) {
-                                              final member =
-                                                  filteredMembers[index];
-                                              return ListTile(
-                                                leading: Stack(
-                                                  alignment:
-                                                      Alignment.bottomRight,
-                                                  children: [
-                                                    CircleAvatar(
-                                                      backgroundColor:
-                                                          HSVColor.fromColor(
-                                                                ColorScheme.fromSeed(
-                                                                  seedColor: Color(
-                                                                    member
-                                                                        .hashCode,
-                                                                  ).withAlpha(255),
+                                    child: ListView.builder(
+                                      itemCount: filteredMembers.length,
+                                      itemBuilder: (context, index) {
+                                        final member = filteredMembers[index];
+                                        return ListTile(
+                                          leading: Stack(
+                                            alignment: Alignment.bottomRight,
+                                            children: [
+                                              CircleAvatar(
+                                                backgroundColor:
+                                                    HSVColor.fromColor(
+                                                          ColorScheme.fromSeed(
+                                                            seedColor: Color(
+                                                              member.hashCode,
+                                                            ).withAlpha(255),
 
-                                                                  brightness:
-                                                                      Brightness
-                                                                          .dark,
-                                                                ).primary,
-                                                              )
-                                                              .withAlpha(0.5)
-                                                              .withSaturation(
-                                                                0.6,
-                                                              )
-                                                              .toColor(),
-                                                      child: Text(
-                                                        member.name
-                                                            .split(' ')
-                                                            .map(
-                                                              (part) => part[0],
-                                                            )
-                                                            .take(2)
-                                                            .join(),
-                                                      ),
-                                                    ),
-                                                    Icon(
-                                                      Icons.circle,
-                                                      color:
-                                                          member.status ==
-                                                              AttendanceStatus
-                                                                  .present
-                                                          ? Colors.green
-                                                          : Colors.red,
-                                                      size: 12,
-                                                    ),
-                                                  ],
+                                                            brightness:
+                                                                Brightness.dark,
+                                                          ).primary,
+                                                        )
+                                                        .withAlpha(0.5)
+                                                        .withSaturation(0.6)
+                                                        .toColor(),
+                                                child: Text(
+                                                  member.name
+                                                      .split(' ')
+                                                      .map((part) => part[0])
+                                                      .take(2)
+                                                      .join(),
                                                 ),
-                                                title: Text(member.name),
-                                                subtitle: Text(
-                                                  member.location == null
-                                                      ? member.privilege
-                                                            .toString()
-                                                            .split('.')
-                                                            .last
-                                                            .capitalize()
-                                                      : "${member.privilege.toString().split('.').last.capitalize()} · ${member.location!}",
-                                                ),
-                                                onTap: () {},
-                                              );
-                                            },
-                                          );
-                                        }
+                                              ),
+                                              Icon(
+                                                Icons.circle,
+                                                color:
+                                                    member.status ==
+                                                        AttendanceStatus.active
+                                                    ? Colors.green
+                                                    : Colors.red,
+                                                size: 12,
+                                              ),
+                                            ],
+                                          ),
+                                          title: Text(member.name),
+                                          subtitle: Text(
+                                            member.location == null
+                                                ? member.privilege
+                                                      .toString()
+                                                      .split('.')
+                                                      .last
+                                                      .capitalize()
+                                                : "${member.privilege.toString().split('.').last.capitalize()} · ${member.location!}",
+                                          ),
+                                          onTap: () {},
+                                        );
                                       },
                                     ),
                                   ),

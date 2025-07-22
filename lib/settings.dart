@@ -30,6 +30,9 @@ class SettingsManager {
     'google.sheet_id': '',
     'app.theme.mode': 'dark',
     'app.theme.accent': 'blue',
+    'station.fixed': true,
+    'station.locations': [],
+    'station.location': null,
     'security.pin': '',
   };
 
@@ -57,8 +60,10 @@ class SettingsManager {
       return prefs?.getInt(fullKey) as T?;
     } else if (T == double) {
       return prefs?.getDouble(fullKey) as T?;
+    } else if (T == List<String>) {
+      return prefs?.getStringList(fullKey) as T?;
     }
-    return null;
+    throw Exception('Unsupported type: $T');
   }
 
   Future<void> setValue(String key, dynamic value) async {
@@ -71,6 +76,10 @@ class SettingsManager {
       await prefs?.setInt(fullKey, value);
     } else if (value is double) {
       await prefs?.setDouble(fullKey, value);
+    } else if (value is List<String>) {
+      await prefs?.setStringList(fullKey, value);
+    } else {
+      return;
     }
   }
 

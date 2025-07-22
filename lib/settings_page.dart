@@ -121,22 +121,20 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadSettings() async {
     await _settingsManager.init();
     _oauthController.text =
-        (await _settingsManager.getValue<String>('google.oauth_credentials')) ??
-        '';
+        (_settingsManager.getValue<String>('google.oauth_credentials')) ?? '';
     _sheetIdController.text =
-        (await _settingsManager.getValue<String>('google.sheet_id')) ?? '';
+        (_settingsManager.getValue<String>('google.sheet_id')) ?? '';
     _pinController.text =
-        (await _settingsManager.getValue<String>('security.pin')) ?? '';
+        (_settingsManager.getValue<String>('security.pin')) ?? '';
     _currentTheme =
-        (await _settingsManager.getValue<String>('app.theme.mode')) ?? 'light';
+        (_settingsManager.getValue<String>('app.theme.mode')) ?? 'light';
     _currentAccentColor =
-        (await _settingsManager.getValue<String>('app.theme.accent')) ?? 'blue';
+        (_settingsManager.getValue<String>('app.theme.accent')) ?? 'blue';
     setState(() {});
   }
 
   Future<bool> _verifyPin(String enteredPin) async {
-    final storedPin =
-        await _settingsManager.getValue<String>('security.pin') ?? '';
+    final storedPin = _settingsManager.getValue<String>('security.pin') ?? '';
     return storedPin.isEmpty || storedPin == enteredPin;
   }
 
@@ -168,7 +166,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         shape: BoxShape.circle,
                         color: index < _enteredPin.length
                             ? Theme.of(context).primaryColor
-                            : Colors.grey.withOpacity(0.3),
+                            : Colors.grey.withAlpha(100),
                       ),
                     ),
                   ),
@@ -215,6 +213,7 @@ class _SettingsPageState extends State<SettingsPage> {
         _isPinVerified = true;
       });
     } else {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Invalid PIN')));
@@ -244,6 +243,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 'google.sheet_id',
                 _sheetIdController.text,
               );
+              if (!context.mounted) return;
               Navigator.pop(context);
             },
             child: const Text('Save'),
@@ -276,6 +276,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   'google.oauth_credentials',
                   _oauthController.text,
                 );
+                if (!context.mounted) return;
                 Navigator.pop(context);
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -339,15 +340,138 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Future<void> _editStationLocation(BuildContext context) async {
+    bool isFixed =
+        _settingsManager.getValue<bool>("station.fixed") ??
+        false; // Default value for fixed station
+    final locationController = TextEditingController(
+      text: _settingsManager.getValue<String>("station.location") ?? "",
+    ); // For fixed location
+    final newLocationController =
+        TextEditingController(); // For adding new non-fixed locations
+    List<String> locations =
+        _settingsManager.getValue<List<String>>("station.locations") ??
+        ["Shop"]; // List for non-fixed locations
+
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Station Settings'),
+        content: StatefulBuilder(
+          builder: (context, setState) => SingleChildScrollView(
+            child: Column(
+              children: [
+                CheckboxListTile(
+                  title: const Text('Fixed Station'),
+                  subtitle: const Text('Permanent location?'),
+                  value: isFixed,
+                  onChanged: (value) {
+                    setState(() {
+                      isFixed = value ?? false;
+                    });
+                  },
+                ),
+                if (isFixed)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: TextField(
+                      controller: locationController,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter Fixed Station Location',
+                        labelText: 'Fixed Location',
+                      ),
+                    ),
+                  ),
+
+                if (!isFixed) ...[
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Mobile Station Locations',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  ...locations.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final location = entry.value;
+                    return ListTile(
+                      title: Text(location),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () {
+                          setState(() {
+                            locations.removeAt(index);
+                          });
+                        },
+                      ),
+                    );
+                  }),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: newLocationController,
+                            decoration: const InputDecoration(
+                              hintText: 'Add New Location',
+                              labelText: 'New Location',
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: () {
+                            if (newLocationController.text.isNotEmpty) {
+                              setState(() {
+                                locations.add(newLocationController.text);
+                                newLocationController.clear();
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await _settingsManager.setValue(
+                'station.location',
+                locationController.text,
+              );
+              await _settingsManager.setValue('station.fixed', isFixed);
+              await _settingsManager.setValue(
+                'station.locations',
+                isFixed ? '' : locations, // Store as comma-separated string
+              );
+              if (!context.mounted) return;
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _resetPin(BuildContext context) async {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
 
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Reset PIN'),
         content: Form(
-          key: _formKey,
+          key: formKey,
           child: TextFormField(
             controller: _pinController,
             decoration: const InputDecoration(
@@ -372,11 +496,12 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           TextButton(
             onPressed: () async {
-              if (_formKey.currentState?.validate() ?? false) {
+              if (formKey.currentState?.validate() ?? false) {
                 await _settingsManager.setValue(
                   'security.pin',
                   _pinController.text,
                 );
+                if (!context.mounted) return;
                 Navigator.pop(context);
               }
             },
@@ -397,11 +522,13 @@ class _SettingsPageState extends State<SettingsPage> {
       if (result != null) {
         final file = File(result);
         await file.writeAsString(json);
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Settings exported successfully')),
         );
       }
     } catch (e) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to export settings')),
       );
@@ -419,11 +546,13 @@ class _SettingsPageState extends State<SettingsPage> {
         final json = await file.readAsString();
         await _settingsManager.importFromJson(json);
         await _loadSettings();
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Settings imported successfully')),
         );
       }
     } catch (e) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to import settings')),
       );
@@ -479,6 +608,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 ListTile(
                   tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
+                  title: const Text("Station Location Options"),
+                  subtitle: const Text(
+                    "Options for if the station is fixed, or floating, and the locations available.",
+                  ),
+                  leading: const Icon(Icons.location_on),
+                  trailing: IconButton(
+                    onPressed: () => _editStationLocation(context),
+                    icon: const Icon(Icons.edit),
+                  ),
+                ),
+                ListTile(
                   title: const Text("Reset PIN"),
                   subtitle: const Text(
                     "Reset the PIN used for accessing admin settings.",
@@ -490,6 +630,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 ListTile(
+                  tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
                   title: const Text("Export Settings"),
                   subtitle: const Text("Export settings as JSON file"),
                   leading: const Icon(Icons.download),
@@ -499,7 +640,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 ListTile(
-                  tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
                   title: const Text("Import Settings"),
                   subtitle: const Text("Import settings from JSON file"),
                   leading: const Icon(Icons.upload),
