@@ -101,32 +101,32 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
-  late DateTime _now;
+  late ValueNotifier<DateTime> _now;
   late Timer _timer;
   late TabController _currentBodyController;
 
   late AttendanceTrackerBackend _backend;
-  late List<Member> _attendance;
+  late ValueNotifier<List<Member>> _attendance;
 
   String _searchQuery = '';
-  ValueNotifier<List<Member>> filteredMembers = ValueNotifier([]);
+  late ValueNotifier<List<Member>> filteredMembers;
 
   @override
   void initState() {
     super.initState();
     _backend = AttendanceTrackerBackend();
-    _attendance = _backend.fetchAttendanceData();
-    filteredMembers.value = _attendance
-        .where(
-          (member) =>
-              member.name.toLowerCase().contains(_searchQuery.toLowerCase()),
-        )
-        .toList();
-    _now = DateTime.now();
+    _attendance = ValueNotifier(_backend.fetchAttendanceData());
+    filteredMembers = ValueNotifier(
+      _attendance.value
+          .where(
+            (member) =>
+                member.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+          )
+          .toList(),
+    );
+    _now = ValueNotifier(DateTime.now());
     _timer = Timer.periodic(const Duration(seconds: 1), (Timer timer) {
-      setState(() {
-        _now = DateTime.now();
-      });
+      _now.value = DateTime.now();
     });
     _currentBodyController = TabController(
       length: 2,
@@ -143,9 +143,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final timeString = DateFormat('hh:mm:ss a').format(_now);
-    final dateString = DateFormat('MMMM d, yyyy').format(_now);
-
     return Scaffold(
       body: Column(
         children: [
@@ -156,20 +153,30 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               children: [
                 Spacer(),
                 Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        dateString,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      Text(
-                        timeString,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                    ],
+                  child: ValueListenableBuilder(
+                    valueListenable: _now,
+                    builder: (context, value, child) {
+                      final timeString = DateFormat(
+                        'hh:mm:ss a',
+                      ).format(_now.value);
+                      final dateString = DateFormat(
+                        'MMMM d, yyyy',
+                      ).format(_now.value);
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            dateString,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          Text(
+                            timeString,
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontFamily: 'monospace'),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 Spacer(),
@@ -235,7 +242,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 child: FilledButton(
                                   onPressed: () {
                                     setState(() {
-                                      _attendance = _backend
+                                      _attendance.value = _backend
                                           .fetchAttendanceData();
                                     });
                                     setState(() {
@@ -339,6 +346,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                       onChanged: (value) {
                                         _searchQuery = value;
                                         filteredMembers.value = _attendance
+                                            .value
                                             .where(
                                               (member) => member.name
                                                   .toLowerCase()
@@ -353,67 +361,79 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                   Expanded(
                                     flex: 2,
                                     child: ValueListenableBuilder<List<Member>>(
-                                      valueListenable: filteredMembers,
-                                      builder: (context, value, child) {
-                                        return ListView.builder(
-                                          itemCount: value.length,
-                                          itemBuilder: (context, index) {
-                                            final member = value[index];
-                                            return ListTile(
-                                              leading: Stack(
-                                                alignment:
-                                                    Alignment.bottomRight,
-                                                children: [
-                                                  CircleAvatar(
-                                                    backgroundColor:
-                                                        HSVColor.fromColor(
-                                                              ColorScheme.fromSeed(
-                                                                seedColor: Color(
-                                                                  member
-                                                                      .hashCode,
-                                                                ).withAlpha(255),
+                                      valueListenable: _attendance,
+                                      builder: (context, attendanceValue, child) {
+                                        return ValueListenableBuilder(
+                                          valueListenable: filteredMembers,
+                                          builder: (context, filterValue, child) {
+                                            return ListView.builder(
+                                              itemCount: filterValue.length,
+                                              itemBuilder: (context, index) {
+                                                final member =
+                                                    filterValue[index];
+                                                return ListTile(
+                                                  leading: Stack(
+                                                    alignment:
+                                                        Alignment.bottomRight,
+                                                    children: [
+                                                      CircleAvatar(
+                                                        backgroundColor:
+                                                            HSVColor.fromColor(
+                                                                  ColorScheme.fromSeed(
+                                                                    seedColor:
+                                                                        Color(
+                                                                          member
+                                                                              .hashCode,
+                                                                        ).withAlpha(
+                                                                          255,
+                                                                        ),
 
-                                                                brightness:
-                                                                    Brightness
-                                                                        .dark,
-                                                              ).primary,
-                                                            )
-                                                            .withAlpha(0.5)
-                                                            .withSaturation(0.6)
-                                                            .toColor(),
-                                                    child: Text(
-                                                      member.name
-                                                          .split(' ')
-                                                          .map(
-                                                            (part) => part[0],
-                                                          )
-                                                          .take(2)
-                                                          .join(),
-                                                    ),
+                                                                    brightness:
+                                                                        Brightness
+                                                                            .dark,
+                                                                  ).primary,
+                                                                )
+                                                                .withAlpha(0.5)
+                                                                .withSaturation(
+                                                                  0.6,
+                                                                )
+                                                                .toColor(),
+                                                        child: Text(
+                                                          member.name
+                                                              .split(' ')
+                                                              .map(
+                                                                (part) =>
+                                                                    part[0],
+                                                              )
+                                                              .take(2)
+                                                              .join(),
+                                                        ),
+                                                      ),
+                                                      Icon(
+                                                        Icons.circle,
+                                                        color:
+                                                            member.status ==
+                                                                AttendanceStatus
+                                                                    .active
+                                                            ? Colors.green
+                                                            : Colors.red,
+                                                        size: 12,
+                                                      ),
+                                                    ],
                                                   ),
-                                                  Icon(
-                                                    Icons.circle,
-                                                    color:
-                                                        member.status ==
-                                                            AttendanceStatus
-                                                                .active
-                                                        ? Colors.green
-                                                        : Colors.red,
-                                                    size: 12,
+                                                  title: Text(member.name),
+                                                  subtitle: Text(
+                                                    member.location == null
+                                                        ? member.privilege
+                                                              .toString()
+                                                              .split('.')
+                                                              .last
+                                                              .capitalize()
+                                                        : "${member.privilege.toString().split('.').last.capitalize()} · ${member.location!}",
                                                   ),
-                                                ],
-                                              ),
-                                              title: Text(member.name),
-                                              subtitle: Text(
-                                                member.location == null
-                                                    ? member.privilege
-                                                          .toString()
-                                                          .split('.')
-                                                          .last
-                                                          .capitalize()
-                                                    : "${member.privilege.toString().split('.').last.capitalize()} · ${member.location!}",
-                                              ),
-                                              onTap: () {},
+                                                  onTap: () {},
+                                                );
+                                              },
                                             );
                                           },
                                         );
