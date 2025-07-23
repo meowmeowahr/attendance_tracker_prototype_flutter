@@ -134,7 +134,10 @@ class _UserFlowState extends State<UserFlow> {
         foregroundColor: Theme.of(context).colorScheme.onSurface,
         title: Text(widget.user.name),
       ),
-      body: !_isPinVerified && widget.user.privilege == MemberPrivilege.admin
+      body:
+          !_isPinVerified &&
+              widget.user.privilege == MemberPrivilege.admin &&
+              (_settingsManager.getValue<bool>("security.pin.require") ?? true)
           ? _buildPinEntry(context)
           : Padding(
               padding: const EdgeInsets.all(16.0),
@@ -213,8 +216,14 @@ class _UserFlowState extends State<UserFlow> {
                                   }
                                 : null,
                             child: Padding(
-                              padding: const EdgeInsets.all(24.0),
-                              child: Text("Clock In"),
+                              padding: const EdgeInsets.all(18.0),
+                              child: Text(
+                                "Clock In",
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -231,8 +240,14 @@ class _UserFlowState extends State<UserFlow> {
                                   }
                                 : null,
                             child: Padding(
-                              padding: const EdgeInsets.all(24.0),
-                              child: Text("Clock Out"),
+                              padding: const EdgeInsets.all(18.0),
+                              child: Text(
+                                "Clock Out",
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                           ),
                         ),

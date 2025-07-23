@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:attendance_tracker/backend.dart';
 import 'package:attendance_tracker/keyboard.dart';
@@ -8,6 +9,7 @@ import 'package:attendance_tracker/string_ext.dart';
 import 'package:attendance_tracker/user_flow.dart';
 import 'package:attendance_tracker/widgets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 void main() async {
@@ -113,6 +115,8 @@ class _HomePageState extends State<HomePage>
   String _searchQuery = '';
   late ValueNotifier<List<Member>> filteredMembers;
 
+  late ValueNotifier<Uint8List> _homeScreenImage;
+
   @override
   void initState() {
     super.initState();
@@ -134,6 +138,12 @@ class _HomePageState extends State<HomePage>
       length: 2,
       vsync: this,
       initialIndex: 0,
+    );
+    _homeScreenImage = ValueNotifier(
+      base64.decode(
+        widget.settingsManager.getValue<String>("app.theme.logo") ??
+            widget.settingsManager.getDefault<String>("app.theme.logo")!,
+      ),
     );
   }
 
@@ -224,7 +234,18 @@ class _HomePageState extends State<HomePage>
                             builder: (context) =>
                                 SettingsPage(widget.themeController),
                           ),
-                        );
+                        ).then((_) {
+                          setState(() {
+                            _homeScreenImage.value = base64.decode(
+                              widget.settingsManager.getValue<String>(
+                                    "app.theme.logo",
+                                  ) ??
+                                  widget.settingsManager.getDefault<String>(
+                                    "app.theme.logo",
+                                  )!,
+                            );
+                          });
+                        });
                       },
                     ),
                     PopupMenuItem(
@@ -250,7 +271,21 @@ class _HomePageState extends State<HomePage>
             child: Row(
               children: [
                 // logo
-                Center(child: FlutterLogo(size: 240)),
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: ValueListenableBuilder(
+                      valueListenable: _homeScreenImage,
+                      builder: (context, image, widget) {
+                        return Image.memory(
+                          image,
+                          width: 240,
+                          fit: BoxFit.fill,
+                        );
+                      },
+                    ),
+                  ),
+                ),
                 Flexible(
                   child: TabBarView(
                     controller: _currentBodyController,

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:attendance_tracker/image_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 
@@ -30,10 +31,12 @@ class SettingsManager {
     'google.sheet_id': '',
     'app.theme.mode': 'dark',
     'app.theme.accent': 'blue',
+    'app.theme.logo': pngToBase64("assets/icons/punch_clock_240.png"),
     'station.fixed': true,
     'station.locations': [],
     'station.location': null,
     'security.pin': '',
+    'security.pin.require': true,
   };
 
   SettingsManager._privateConstructor();
@@ -47,6 +50,14 @@ class SettingsManager {
       if (prefs == null || !prefs!.containsKey(_prefix + entry.key)) {
         await setValue(entry.key, entry.value);
       }
+    }
+  }
+
+  T? getDefault<T>(String key) {
+    if (_defaultSettings.containsKey(key)) {
+      return _defaultSettings[key];
+    } else {
+      return null;
     }
   }
 
@@ -64,6 +75,11 @@ class SettingsManager {
       return prefs?.getStringList(fullKey) as T?;
     }
     throw Exception('Unsupported type: $T');
+  }
+
+  dynamic getDynamic(String key) {
+    String fullKey = _prefix + key;
+    return prefs?.get(fullKey);
   }
 
   Future<void> setValue(String key, dynamic value) async {
@@ -86,7 +102,7 @@ class SettingsManager {
   Future<Map<String, dynamic>> exportSettings() async {
     Map<String, dynamic> settings = {};
     for (var key in _defaultSettings.keys) {
-      settings[key] = await getValue<dynamic>(key);
+      settings[key] = getDynamic(key);
     }
     return settings;
   }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:attendance_tracker/image_util.dart';
 import 'package:attendance_tracker/settings.dart';
 import 'package:attendance_tracker/string_ext.dart';
 import 'package:attendance_tracker/widgets.dart';
@@ -341,6 +342,61 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Future<void> _editAppLogo(BuildContext context) async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("App Logo"),
+        content: StatefulBuilder(
+          builder: (context, setState) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.memory(
+                base64.decode(
+                  _settingsManager.getValue<String>("app.theme.logo") ??
+                      _settingsManager.getDefault<String>("app.theme.logo")!,
+                ),
+                height: 128,
+              ),
+              SizedBox(height: 8.0),
+              ElevatedButton.icon(
+                icon: Icon(Icons.upload),
+                label: Text("Upload Image"),
+                onPressed: () async {
+                  try {
+                    final result = await FilePicker.platform.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'],
+                    );
+                    if (result != null && result.files.single.path != null) {
+                      setState(() {
+                        _settingsManager.setValue(
+                          "app.theme.logo",
+                          pngToBase64(result.files.single.path!),
+                        );
+                      });
+                    }
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Failed to import image')),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Exit'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _editStationLocation(BuildContext context) async {
     bool isFixed =
         _settingsManager.getValue<bool>("station.fixed") ??
@@ -530,9 +586,9 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to export settings')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to export settings $e')));
     }
   }
 
@@ -609,6 +665,15 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 ListTile(
                   tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
+                  title: const Text("App Logo"),
+                  subtitle: Text("Logo used in the home screen."),
+                  leading: const Icon(Icons.image),
+                  trailing: IconButton(
+                    onPressed: () => _editAppLogo(context),
+                    icon: const Icon(Icons.edit),
+                  ),
+                ),
+                ListTile(
                   title: const Text("Station Location Options"),
                   subtitle: const Text(
                     "Options for if the station is fixed, or floating, and the locations available.",
@@ -620,6 +685,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 ListTile(
+                  tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
                   title: const Text("Reset PIN"),
                   subtitle: const Text(
                     "Reset the PIN used for accessing admin settings.",
@@ -628,6 +694,28 @@ class _SettingsPageState extends State<SettingsPage> {
                   trailing: IconButton(
                     onPressed: () => _resetPin(context),
                     icon: const Icon(Icons.edit),
+                  ),
+                ),
+                ListTile(
+                  title: Text("Require PIN for Admin Sign-in"),
+                  subtitle: Text(
+                    "Request the PIN if an ADMIN user signs in/out without a badge",
+                  ),
+                  leading: Icon(Icons.pin),
+                  trailing: Switch(
+                    value:
+                        _settingsManager.getValue<bool>(
+                          "security.pin.require",
+                        ) ??
+                        true,
+                    onChanged: (value) {
+                      setState(() {
+                        _settingsManager.setValue(
+                          "security.pin.require",
+                          value,
+                        );
+                      });
+                    },
                   ),
                 ),
                 ListTile(
