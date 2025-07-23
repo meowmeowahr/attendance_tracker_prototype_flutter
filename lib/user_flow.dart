@@ -74,7 +74,7 @@ class _UserFlowState extends State<UserFlow> {
                       shape: BoxShape.circle,
                       color: index < _enteredPin.length
                           ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.surfaceBright,
+                          : Theme.of(context).colorScheme.surfaceContainerHigh,
                     ),
                   ),
                 ),

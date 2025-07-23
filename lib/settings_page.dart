@@ -81,7 +81,6 @@ class PinKeypad extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         fixedSize: const Size(64, 64),
         padding: const EdgeInsets.all(8),
-        backgroundColor: Theme.of(context).primaryColor.withAlpha(200),
       ),
       child: Text(
         label,
@@ -166,7 +165,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         shape: BoxShape.circle,
                         color: index < _enteredPin.length
                             ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.surfaceBright,
+                            : Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHigh,
                       ),
                     ),
                   ),
