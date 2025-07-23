@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:ffi';
 
 import 'package:flutter/cupertino.dart';
 
@@ -51,6 +52,22 @@ class AttendanceTrackerBackend {
     Member(3, 'Alice Johnson', AttendanceStatus.active, location: "Shop"),
   ]);
 
+  void initialize() async {
+    _clockInQueue.clear();
+    _clockOutQueue.clear();
+    attendance.value = [
+      Member(
+        1,
+        'John Middle Doe',
+        AttendanceStatus.active,
+        location: "Outreach Event",
+        privilege: MemberPrivilege.admin,
+      ),
+      Member(2, 'Jane Smith', AttendanceStatus.inactive),
+      Member(3, 'Alice Johnson', AttendanceStatus.active, location: "Shop"),
+    ];
+  }
+
   Future<List<String>> fetchNames() async {
     await Future.delayed(Duration(seconds: 1));
     return attendance.value.map((member) => member.name).toList();
@@ -75,9 +92,12 @@ class AttendanceTrackerBackend {
         attendance.value[memberIndex].id,
         attendance.value[memberIndex].name,
         AttendanceStatus.inactive,
-        location: attendance.value[memberIndex].location,
+        location: null,
         privilege: attendance.value[memberIndex].privilege,
       );
+      attendance.value = [
+        ...attendance.value,
+      ]; // I think this is a bug in ValueNotifier
     }
   }
 
@@ -103,6 +123,9 @@ class AttendanceTrackerBackend {
         location: location,
         privilege: attendance.value[memberIndex].privilege,
       );
+      attendance.value = [
+        ...attendance.value,
+      ]; // I think this is a bug in ValueNotifier
     }
   }
 }

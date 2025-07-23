@@ -1,0 +1,14 @@
+// Project-local debug tasks
+//
+// For more documentation on how to configure debug tasks,
+// see: https://zed.dev/docs/debugger
+[
+  {
+    "name": "Flutter Debug",
+    "type": "flutter",
+    "request": "launch",
+    "program": "lib/main.dart",
+    "flutterMode": "debug",
+    "flutterPlatform": "android"
+  }
+]

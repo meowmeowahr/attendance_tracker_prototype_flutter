@@ -451,7 +451,7 @@ class _SettingsPageState extends State<SettingsPage> {
               await _settingsManager.setValue('station.fixed', isFixed);
               await _settingsManager.setValue(
                 'station.locations',
-                isFixed ? '' : locations, // Store as comma-separated string
+                isFixed ? [] : locations,
               );
               if (!context.mounted) return;
               Navigator.pop(context);

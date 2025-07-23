@@ -5,9 +5,21 @@ import 'package:flutter/material.dart';
 
 class UserFlow extends StatefulWidget {
   final Member user;
+  final AttendanceTrackerBackend backend;
   final bool requireAdminPinEntry;
+  final String? fixedLocation;
+  final List<String>? allowedLocations;
+  final bool fixed;
 
-  const UserFlow(this.user, {super.key, this.requireAdminPinEntry = true});
+  const UserFlow(
+    this.user,
+    this.backend, {
+    super.key,
+    this.requireAdminPinEntry = true,
+    this.fixedLocation,
+    this.allowedLocations,
+    this.fixed = false,
+  });
 
   @override
   State<UserFlow> createState() => _UserFlowState();
@@ -17,10 +29,12 @@ class _UserFlowState extends State<UserFlow> {
   final _settingsManager = SettingsManager();
   String _enteredPin = '';
   bool _isPinVerified = false;
+  String? _selectedLocation;
 
   @override
   void initState() {
     super.initState();
+    _selectedLocation = widget.allowedLocations?.first;
     _loadSettings();
   }
 
@@ -122,7 +136,113 @@ class _UserFlowState extends State<UserFlow> {
       ),
       body: !_isPinVerified && widget.user.privilege == MemberPrivilege.admin
           ? _buildPinEntry(context)
-          : Placeholder(),
+          : Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Center(
+                child: Column(
+                  children: [
+                    Spacer(),
+                    CircleAvatar(
+                      radius: 128,
+                      child: Text(
+                        widget.user.name
+                            .split(' ')
+                            .map((part) => part[0])
+                            .take(2)
+                            .join(),
+                        style: TextStyle(
+                          fontSize: 84,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    Spacer(),
+                    if (widget.user.status == AttendanceStatus.active)
+                      Text(
+                        "Leaving: ${widget.user.location}",
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      )
+                    else if (widget.fixed)
+                      Text(
+                        "Location: ${widget.fixedLocation}",
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      )
+                    else
+                      Padding(
+                        padding: const EdgeInsets.only(left: 24.0, right: 24.0),
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedLocation,
+
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedLocation = value!;
+                            });
+                          },
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            labelText: "Location",
+                          ),
+                          items: widget.allowedLocations!.map((location) {
+                            return DropdownMenuItem<String>(
+                              value: location,
+                              child: Text(location),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    SizedBox(height: 16),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed:
+                                widget.user.status == AttendanceStatus.inactive
+                                ? () {
+                                    setState(() {
+                                      widget.backend.clockIn(
+                                        widget.user.id,
+                                        widget.fixed
+                                            ? widget.fixedLocation!
+                                            : _selectedLocation!,
+                                      );
+                                    });
+                                    Navigator.of(context).pop();
+                                  }
+                                : null,
+                            child: Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Text("Clock In"),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed:
+                                widget.user.status == AttendanceStatus.active
+                                ? () {
+                                    setState(() {
+                                      widget.backend.clockOut(widget.user.id);
+                                    });
+                                    Navigator.of(context).pop();
+                                  }
+                                : null,
+                            child: Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Text("Clock Out"),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
     );
   }
 }

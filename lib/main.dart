@@ -83,7 +83,7 @@ class _MyAppState extends State<MyApp> {
               themeMode: widget.themeController.themeMode.value,
               darkTheme: darkTheme,
               theme: lightTheme,
-              home: HomePage(widget.themeController),
+              home: HomePage(widget.themeController, widget.settingsManager),
             );
           },
         );
@@ -93,15 +93,17 @@ class _MyAppState extends State<MyApp> {
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage(this.themeController, {super.key});
+  const HomePage(this.themeController, this.settingsManager, {super.key});
 
   final ThemeController themeController;
+  final SettingsManager settingsManager;
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
+class _HomePageState extends State<HomePage>
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late ValueNotifier<DateTime> _now;
   late Timer _timer;
   late TabController _currentBodyController;
@@ -115,6 +117,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _backend = AttendanceTrackerBackend();
+    _backend.initialize();
     filteredMembers = ValueNotifier(
       _backend.attendance.value
           .where(
@@ -135,6 +138,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   @override
+  bool get wantKeepAlive {
+    return true;
+  }
+
+  @override
   void dispose() {
     _timer.cancel();
     super.dispose();
@@ -143,12 +151,28 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void beginUserFlow(BuildContext context, Member user) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => UserFlow(user)),
+      MaterialPageRoute(
+        builder: (context) => UserFlow(
+          user,
+          _backend,
+          allowedLocations:
+              widget.settingsManager.getValue<List<String>>(
+                'station.locations',
+              ) ??
+              ["Shop"],
+          fixed:
+              widget.settingsManager.getValue<bool>('station.fixed') ?? false,
+          fixedLocation:
+              widget.settingsManager.getValue<String>('station.location') ??
+              "Shop",
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       body: Column(
         children: [
@@ -366,6 +390,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                     child: ValueListenableBuilder<List<Member>>(
                                       valueListenable: _backend.attendance,
                                       builder: (context, attendanceValue, child) {
+                                        filteredMembers.value = _backend
+                                            .attendance
+                                            .value
+                                            .where(
+                                              (member) => member.name
+                                                  .toLowerCase()
+                                                  .contains(
+                                                    _searchQuery.toLowerCase(),
+                                                  ),
+                                            )
+                                            .toList();
                                         return ValueListenableBuilder(
                                           valueListenable: filteredMembers,
                                           builder: (context, filterValue, child) {
