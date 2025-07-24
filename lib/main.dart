@@ -212,11 +212,11 @@ class _HomePageState extends State<HomePage>
     _rfidHidTimeoutTimer = RestartableTimer(
       Duration(
         milliseconds:
-            (widget.settingsManager.getValue<double>("rfid.hid.timeout") ??
-                    widget.settingsManager.getDefault<double>(
+            ((widget.settingsManager.getValue<double>("rfid.hid.timeout") ??
+                        widget.settingsManager.getDefault<double>(
                           "rfid.hid.timeout",
-                        )! *
-                        1000)
+                        )!) *
+                    1000)
                 .ceil(),
       ),
       () {
@@ -241,24 +241,7 @@ class _HomePageState extends State<HomePage>
         }
       },
     );
-    _rfidHidStream.listen((event) {
-      _rfidHidTimeoutTimer.reset(); // reset the timeout
-      _rfidHidInWaiting.add(event); // add new event
-      final Map<String, String?> eolMap = {
-        "SPACE": " ",
-        "RETURN": "\r",
-        "NONE": null,
-      };
-      if (event.char ==
-          eolMap[widget.settingsManager.getValue<String>("rfid.hid.eol") ??
-              widget.settingsManager.getDefault<String>("rfid.hid.eol")!]) {
-        // end-of-line
-        _processRfid(
-          int.tryParse(_rfidHidInWaiting.map((ev) => ev.char).join("")),
-        );
-        _rfidHidInWaiting.clear(); // clear the queue
-      }
-    });
+    _rfidHidStream.listen((event) => _rfidHidEventListener(event));
 
     // rfid serial
     if ((widget.settingsManager.getValue<String>("rfid.reader") ??
@@ -304,6 +287,25 @@ class _HomePageState extends State<HomePage>
       final connOk = _rfidSerialStreamer.connect(); // attempt to connect
       _rfidSerialStreamer.stream.listen((data) => _processRfid(data));
       print("Connection to startup serial port: $connOk");
+    }
+  }
+
+  void _rfidHidEventListener(RfidEvent event) {
+    _rfidHidTimeoutTimer.reset(); // reset the timeout
+    _rfidHidInWaiting.add(event); // add new event
+    final Map<String, String?> eolMap = {
+      "SPACE": " ",
+      "RETURN": "\r",
+      "NONE": null,
+    };
+    if (event.char ==
+        eolMap[widget.settingsManager.getValue<String>("rfid.hid.eol") ??
+            widget.settingsManager.getDefault<String>("rfid.hid.eol")!]) {
+      // end-of-line
+      _processRfid(
+        int.tryParse(_rfidHidInWaiting.map((ev) => ev.char).join("")),
+      );
+      _rfidHidInWaiting.clear(); // clear the queue
     }
   }
 
