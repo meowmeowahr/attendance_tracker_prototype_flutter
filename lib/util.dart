@@ -1,23 +1,22 @@
-String escapeFormatCharacters(String input) {
+String unescapeFormatCharacters(String input) {
   // Map of format characters to their escaped versions
   final escapeMap = {
-    '\n': '\\n', // Newline
-    '\t': '\\t', // Tab
-    '\r': '\\r', // Carriage return
-    '\b': '\\b', // Backspace
-    '\f': '\\f', // Form feed
-    '\\': '\\\\', // Backslash itself
-    '"': '\\"', // Double quote
-    "'": "\\'", // Single quote
-    "\x02": "\\x02", // STX
-    "\x03": "\\x03", // ETX
+    '\\n': '\n', // Newline
+    '\\t': '\t', // Tab
+    '\\r': '\r', // Carriage return
+    '\\b': '\b', // Backspace
+    '\\f': '\f', // Form feed
+    '\\\\': '\\', // Backslash itself
+    '\\"': '"', // Double quote
+    "\\'": "'", // Single quote
+    "\\x02": "\x02", // STX
+    "\\x03": "\x03", // ETX
   };
 
-  // Replace each format character with its escaped version
-  return input.replaceAllMapped(
-    RegExp('[\x02\x03\x0A\x09\x0D\x08\x0C\\\\"\']'),
-    (Match match) => escapeMap[match.group(0)] ?? match.group(0)!,
-  );
+  for (var key in escapeMap.keys) {
+    input = input.replaceAll(key, escapeMap[key]!);
+  }
+  return input;
 }
 
 enum ChecksumStyle { none, xor2hex, xor1byte }
@@ -60,7 +59,7 @@ int? normalizeTagId(
           pairs.add(int.parse(tagStr.substring(i, i + 2), radix: 16));
         }
         int calcChecksum = pairs.reduce((a, b) => a ^ b);
-        if (calcChecksum != int.parse(checksumStr!, radix: 16)) {
+        if (calcChecksum != int.parse(checksumStr, radix: 16)) {
           print('Checksum validation failed: $message');
           return null;
         }

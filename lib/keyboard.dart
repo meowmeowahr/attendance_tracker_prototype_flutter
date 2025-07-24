@@ -1,5 +1,6 @@
-import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:xml/xml.dart';
 
 class KeyEvent {
@@ -248,8 +249,9 @@ class _VirtualKeyboardState extends State<VirtualKeyboard>
     }
 
     try {
-      final file = File(path);
-      final xmlString = await file.readAsString();
+      // FIX: Use rootBundle.loadString to load from assets
+      final xmlString = await rootBundle.loadString(path);
+
       final document = XmlDocument.parse(xmlString);
       final root = document.rootElement;
 
@@ -291,7 +293,9 @@ class _VirtualKeyboardState extends State<VirtualKeyboard>
       _parsedLayoutsCache[path] = layoutData;
       return layoutData;
     } catch (e) {
-      debugPrint('Error parsing XML file $path: $e');
+      debugPrint(
+        'Error parsing XML asset $path: $e',
+      ); // Changed message for clarity
       return null;
     }
   }

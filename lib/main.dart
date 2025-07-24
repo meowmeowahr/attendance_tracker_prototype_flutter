@@ -19,6 +19,7 @@ import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   final settings = SettingsManager();
   await settings.init();
 
@@ -234,9 +235,27 @@ class _HomePageState extends State<HomePage>
           }
 
           // process
-          _processRfid(
-            int.tryParse(_rfidHidInWaiting.map((ev) => ev.char).join("")),
-          );
+          switch (DataFormat.values.byName(
+            widget.settingsManager.getValue<String>("rfid.hid.format") ??
+                widget.settingsManager.getDefault<String>("rfid.hid.format")!,
+          )) {
+            case DataFormat.decAscii:
+              _processRfid(
+                int.tryParse(_rfidHidInWaiting.map((ev) => ev.char).join("")),
+              );
+              break;
+            case DataFormat.hexAscii:
+              _processRfid(
+                int.tryParse(
+                  _rfidHidInWaiting.map((ev) => ev.char).join(""),
+                  radix: 16,
+                ),
+              );
+              break;
+            case DataFormat.bin:
+              // unsupported
+              _displayErrorPopup("Binary RFID format is not supported");
+          }
           _rfidHidInWaiting.clear(); // clear the queue
         }
       },
@@ -261,12 +280,14 @@ class _HomePageState extends State<HomePage>
                         )!) *
                     1000)
                 .ceil(),
-        eolString:
-            widget.settingsManager.getValue<String>("rfid.serial.eol") ??
-            widget.settingsManager.getDefault<String>("rfid.serial.eol")!,
-        solString:
-            widget.settingsManager.getValue<String>("rfid.serial.sol") ??
-            widget.settingsManager.getDefault<String>("rfid.serial.sol")!,
+        eolString: unescapeFormatCharacters(
+          widget.settingsManager.getValue<String>("rfid.serial.eol") ??
+              widget.settingsManager.getDefault<String>("rfid.serial.eol")!,
+        ),
+        solString: unescapeFormatCharacters(
+          widget.settingsManager.getValue<String>("rfid.serial.sol") ??
+              widget.settingsManager.getDefault<String>("rfid.serial.sol")!,
+        ),
         dataFormat: DataFormat.values.byName(
           widget.settingsManager.getValue<String>("rfid.serial.format") ??
               widget.settingsManager.getDefault<String>("rfid.serial.format")!,
@@ -302,9 +323,28 @@ class _HomePageState extends State<HomePage>
         eolMap[widget.settingsManager.getValue<String>("rfid.hid.eol") ??
             widget.settingsManager.getDefault<String>("rfid.hid.eol")!]) {
       // end-of-line
-      _processRfid(
-        int.tryParse(_rfidHidInWaiting.map((ev) => ev.char).join("")),
-      );
+      switch (DataFormat.values.byName(
+        widget.settingsManager.getValue<String>("rfid.hid.format") ??
+            widget.settingsManager.getDefault<String>("rfid.hid.format")!,
+      )) {
+        case DataFormat.decAscii:
+          _processRfid(
+            int.tryParse(_rfidHidInWaiting.map((ev) => ev.char).join("")),
+          );
+          break;
+        case DataFormat.hexAscii:
+          _processRfid(
+            int.tryParse(
+              _rfidHidInWaiting.map((ev) => ev.char).join(""),
+              radix: 16,
+            ),
+          );
+          break;
+        case DataFormat.bin:
+          // unsupported
+          _displayErrorPopup("Binary RFID format is not supported");
+      }
+
       _rfidHidInWaiting.clear(); // clear the queue
     }
   }
@@ -351,6 +391,29 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+  void _displaySuccessPopup() {
+    showDialog(
+      barrierColor: Colors.green.withAlpha(40),
+      barrierDismissible: false,
+      context: context,
+      builder: (context) {
+        Timer(Duration(seconds: 1), () {
+          Navigator.of(context).pop();
+        });
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Lottie.asset('assets/animations/success.json', reverse: true),
+            ],
+          ),
+          actionsPadding: EdgeInsets.zero,
+          actions: [],
+        );
+      },
+    );
+  }
+
   @override
   bool get wantKeepAlive {
     return true;
@@ -365,6 +428,7 @@ class _HomePageState extends State<HomePage>
 
   void beginUserFlow(BuildContext context, Member user, bool fromRfid) {
     rfidScanInActive = false;
+    final prevMembers = _backend.attendance.value;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -386,6 +450,12 @@ class _HomePageState extends State<HomePage>
       ),
     ).then((_) {
       rfidScanInActive = true;
+      final newMembers = _backend.attendance.value;
+      print(newMembers);
+      print(prevMembers);
+      if (newMembers != prevMembers) {
+        _displaySuccessPopup();
+      }
     });
   }
 
@@ -412,471 +482,466 @@ class _HomePageState extends State<HomePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Scaffold(
-      body: Column(
-        children: [
-          Container(
-            color: Theme.of(context).colorScheme.surfaceContainerHigh,
-            height: 60,
-            child: Row(
-              children: [
-                Spacer(),
-                Center(
-                  child: ValueListenableBuilder(
-                    valueListenable: _now,
-                    builder: (context, value, child) {
-                      final timeString = DateFormat(
-                        'hh:mm:ss a',
-                      ).format(_now.value);
-                      final dateString = DateFormat(
-                        'MMMM d, yyyy',
-                      ).format(_now.value);
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            dateString,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          Text(
-                            timeString,
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(fontFamily: 'monospace'),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-                Spacer(),
-                PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert),
-                  tooltip: "",
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'settings',
-                      child: Text('Settings'),
-                      onTap: () {
-                        rfidScanInActive = false;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                SettingsPage(widget.themeController),
-                          ),
-                        ).then((_) {
-                          // navigate back
-                          rfidScanInActive = true;
-                          setState(() {
-                            _homeScreenImage.value = base64.decode(
-                              widget.settingsManager.getValue<String>(
-                                    "app.theme.logo",
-                                  ) ??
-                                  widget.settingsManager.getDefault<String>(
-                                    "app.theme.logo",
-                                  )!,
-                            );
-                          });
-                          // rfid serial
-                          if ((widget.settingsManager.getValue<String>(
-                                    "rfid.reader",
-                                  ) ??
-                                  widget.settingsManager.getDefault<String>(
-                                    "rfid.reader",
-                                  )!) ==
-                              "serial") {
-                            _rfidSerialStreamer.configure(
-                              portPath:
-                                  widget.settingsManager.getValue<String>(
-                                    "rfid.serial.port",
-                                  ) ??
-                                  widget.settingsManager.getDefault<String>(
-                                    "rfid.serial.port",
-                                  )!,
-                              baudRate:
-                                  widget.settingsManager.getValue<int>(
-                                    "rfid.serial.baud",
-                                  ) ??
-                                  widget.settingsManager.getDefault<int>(
-                                    "rfid.serial.baud",
-                                  )!,
-                              readTimeoutMs:
-                                  ((widget.settingsManager.getValue<double>(
-                                                "rfid.serial.timeout",
-                                              ) ??
-                                              widget.settingsManager
-                                                  .getDefault<double>(
-                                                    "rfid.serial.timeout",
-                                                  )!) *
-                                          1000)
-                                      .ceil(),
-                              eolString:
-                                  widget.settingsManager.getValue<String>(
-                                    "rfid.serial.eol",
-                                  ) ??
-                                  widget.settingsManager.getDefault<String>(
-                                    "rfid.serial.eol",
-                                  )!,
-                              solString:
-                                  widget.settingsManager.getValue<String>(
-                                    "rfid.serial.sol",
-                                  ) ??
-                                  widget.settingsManager.getDefault<String>(
-                                    "rfid.serial.sol",
-                                  )!,
-                              dataFormat: DataFormat.values.byName(
-                                widget.settingsManager.getValue<String>(
-                                      "rfid.serial.format",
-                                    ) ??
-                                    widget.settingsManager.getDefault<String>(
-                                      "rfid.serial.format",
-                                    )!,
-                              ),
-                              checksumStyle: ChecksumStyle.values.byName(
-                                widget.settingsManager.getValue<String>(
-                                      "rfid.serial.checksum",
-                                    ) ??
-                                    widget.settingsManager.getDefault<String>(
-                                      "rfid.serial.checksum",
-                                    )!,
-                              ),
-                              checksumPosition: ChecksumPosition.values.byName(
-                                widget.settingsManager.getValue<String>(
-                                      "rfid.serial.checksum.pos",
-                                    ) ??
-                                    widget.settingsManager.getDefault<String>(
-                                      "rfid.serial.checksum.pos",
-                                    )!,
-                              ),
-                            );
-                            final connOk = _rfidSerialStreamer
-                                .connect(); // attempt to connect
-                            print(
-                              "Connection to post-setup serial port: $connOk",
-                            );
-                          }
-                        });
-                      },
-                    ),
-                    PopupMenuItem(
-                      value: 'about',
-                      child: Text('About'),
-                      onTap: () {
-                        showAboutDialog(
-                          context: context,
-                          applicationName: 'Attendance Tracker',
-                          applicationVersion: '1.0.0',
-                          applicationIcon: FlutterLogo(size: 64),
-                          children: [],
-                        );
-                      },
-                    ),
-                  ],
-                ),
-                SizedBox(width: 8),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Row(
-              children: [
-                // logo
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
+    return SafeArea(
+      child: Scaffold(
+        body: Column(
+          children: [
+            Container(
+              color: Theme.of(context).colorScheme.surfaceContainerHigh,
+              height: 60,
+              child: Row(
+                children: [
+                  Spacer(),
+                  Center(
                     child: ValueListenableBuilder(
-                      valueListenable: _homeScreenImage,
-                      builder: (context, image, widget) {
-                        return Image.memory(
-                          image,
-                          width: 240,
-                          fit: BoxFit.fill,
+                      valueListenable: _now,
+                      builder: (context, value, child) {
+                        final timeString = DateFormat(
+                          'hh:mm:ss a',
+                        ).format(_now.value);
+                        final dateString = DateFormat(
+                          'MMMM d, yyyy',
+                        ).format(_now.value);
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              dateString,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Text(
+                              timeString,
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontFamily: 'monospace'),
+                            ),
+                          ],
                         );
                       },
                     ),
                   ),
-                ),
-                Flexible(
-                  child: TabBarView(
-                    controller: _currentBodyController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: [
-                      Material(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerLow,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Spacer(),
-                              RfidTapCard(),
-                              Padding(
-                                padding: const EdgeInsets.all(4.0),
-                                child: FilledButton(
-                                  onPressed: () {
-                                    _nameSelectionScreenTimeout.reset();
-                                    setState(() {
-                                      _currentBodyController.index = 1;
-                                    });
-                                  },
-                                  style: ButtonStyle(
-                                    minimumSize: WidgetStateProperty.all(
-                                      const Size.fromHeight(60),
-                                    ),
-                                    shape: WidgetStateProperty.all(
-                                      RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.all(
-                                          Radius.circular(8),
-                                        ),
-                                      ),
-                                    ),
-                                    textStyle: WidgetStateProperty.all(
-                                      Theme.of(
-                                        context,
-                                      ).textTheme.bodyLarge?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  child: const Text("Select Name"),
+                  Spacer(),
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert),
+                    tooltip: "",
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'settings',
+                        child: Text('Settings'),
+                        onTap: () {
+                          rfidScanInActive = false;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  SettingsPage(widget.themeController),
+                            ),
+                          ).then((_) {
+                            // navigate back
+                            rfidScanInActive = true;
+                            setState(() {
+                              _homeScreenImage.value = base64.decode(
+                                widget.settingsManager.getValue<String>(
+                                      "app.theme.logo",
+                                    ) ??
+                                    widget.settingsManager.getDefault<String>(
+                                      "app.theme.logo",
+                                    )!,
+                              );
+                            });
+                            // rfid serial
+                            if ((widget.settingsManager.getValue<String>(
+                                      "rfid.reader",
+                                    ) ??
+                                    widget.settingsManager.getDefault<String>(
+                                      "rfid.reader",
+                                    )!) ==
+                                "serial") {
+                              _rfidSerialStreamer.configure(
+                                portPath:
+                                    widget.settingsManager.getValue<String>(
+                                      "rfid.serial.port",
+                                    ) ??
+                                    widget.settingsManager.getDefault<String>(
+                                      "rfid.serial.port",
+                                    )!,
+                                baudRate:
+                                    widget.settingsManager.getValue<int>(
+                                      "rfid.serial.baud",
+                                    ) ??
+                                    widget.settingsManager.getDefault<int>(
+                                      "rfid.serial.baud",
+                                    )!,
+                                readTimeoutMs:
+                                    ((widget.settingsManager.getValue<double>(
+                                                  "rfid.serial.timeout",
+                                                ) ??
+                                                widget.settingsManager
+                                                    .getDefault<double>(
+                                                      "rfid.serial.timeout",
+                                                    )!) *
+                                            1000)
+                                        .ceil(),
+                                eolString: unescapeFormatCharacters(
+                                  widget.settingsManager.getValue<String>(
+                                        "rfid.serial.eol",
+                                      ) ??
+                                      widget.settingsManager.getDefault<String>(
+                                        "rfid.serial.eol",
+                                      )!,
                                 ),
-                              ),
-                              Spacer(),
-                              Card.filled(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: ValueListenableBuilder(
-                                    valueListenable: _homeScreenState,
-                                    builder: (context, value, child) {
-                                      return Row(
-                                        children: [
-                                          Icon(
-                                            Icons.circle,
-                                            color: value.color,
-                                            size: 18,
-                                          ),
-                                          SizedBox(width: 8),
-                                          Text(value.description),
-                                        ],
-                                      );
-                                    },
-                                  ),
+                                solString: unescapeFormatCharacters(
+                                  widget.settingsManager.getValue<String>(
+                                        "rfid.serial.sol",
+                                      ) ??
+                                      widget.settingsManager.getDefault<String>(
+                                        "rfid.serial.sol",
+                                      )!,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
+                                dataFormat: DataFormat.values.byName(
+                                  widget.settingsManager.getValue<String>(
+                                        "rfid.serial.format",
+                                      ) ??
+                                      widget.settingsManager.getDefault<String>(
+                                        "rfid.serial.format",
+                                      )!,
+                                ),
+                                checksumStyle: ChecksumStyle.values.byName(
+                                  widget.settingsManager.getValue<String>(
+                                        "rfid.serial.checksum",
+                                      ) ??
+                                      widget.settingsManager.getDefault<String>(
+                                        "rfid.serial.checksum",
+                                      )!,
+                                ),
+                                checksumPosition: ChecksumPosition.values
+                                    .byName(
+                                      widget.settingsManager.getValue<String>(
+                                            "rfid.serial.checksum.pos",
+                                          ) ??
+                                          widget.settingsManager
+                                              .getDefault<String>(
+                                                "rfid.serial.checksum.pos",
+                                              )!,
+                                    ),
+                              );
+                              final connOk = _rfidSerialStreamer
+                                  .connect(); // attempt to connect
+                              print(
+                                "Connection to post-setup serial port: $connOk",
+                              );
+                            }
+                          });
+                        },
                       ),
-                      Column(
-                        children: [
-                          Container(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHigh,
-                            height: 48,
-                            child: Center(
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SizedBox(width: 8),
-                                  IconButton(
+                      PopupMenuItem(
+                        value: 'about',
+                        child: Text('About'),
+                        onTap: () {
+                          showAboutDialog(
+                            context: context,
+                            applicationName: 'Attendance Tracker',
+                            applicationVersion: '1.0.0',
+                            applicationIcon: FlutterLogo(size: 64),
+                            children: [],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  SizedBox(width: 8),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  // logo
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: ValueListenableBuilder(
+                        valueListenable: _homeScreenImage,
+                        builder: (context, image, widget) {
+                          return Image.memory(
+                            image,
+                            width: 240,
+                            fit: BoxFit.fill,
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  Flexible(
+                    child: TabBarView(
+                      controller: _currentBodyController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        Material(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerLow,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Spacer(),
+                                RfidTapCard(),
+                                Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: FilledButton(
                                     onPressed: () {
+                                      _nameSelectionScreenTimeout.reset();
                                       setState(() {
-                                        _currentBodyController.index = 0;
+                                        _currentBodyController.index = 1;
                                       });
                                     },
-                                    icon: Icon(Icons.arrow_back),
+                                    style: ButtonStyle(
+                                      minimumSize: WidgetStateProperty.all(
+                                        const Size.fromHeight(60),
+                                      ),
+                                      shape: WidgetStateProperty.all(
+                                        RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.all(
+                                            Radius.circular(8),
+                                          ),
+                                        ),
+                                      ),
+                                      textStyle: WidgetStateProperty.all(
+                                        Theme.of(
+                                          context,
+                                        ).textTheme.bodyLarge?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    child: const Text("Select Name"),
                                   ),
-                                  Spacer(),
-                                  Text(
-                                    "Manual Name Selection",
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleMedium,
+                                ),
+                                Spacer(),
+                                Card.filled(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: ValueListenableBuilder(
+                                      valueListenable: _homeScreenState,
+                                      builder: (context, value, child) {
+                                        return Row(
+                                          children: [
+                                            Icon(
+                                              Icons.circle,
+                                              color: value.color,
+                                              size: 18,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(value.description),
+                                          ],
+                                        );
+                                      },
+                                    ),
                                   ),
-                                  Spacer(),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
-                          Expanded(
-                            child: Listener(
-                              behavior: HitTestBehavior.translucent,
-                              onPointerDown: (ev) {
-                                _nameSelectionScreenTimeout.cancel();
-                              },
-                              onPointerUp: (ev) {
-                                _nameSelectionScreenTimeout.reset();
-                              },
-                              onPointerSignal: (ev) {
-                                _nameSelectionScreenTimeout.reset();
-                              },
-                              child: Material(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.surfaceContainerLow,
-                                child: Column(
+                        ),
+                        Column(
+                          children: [
+                            Container(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHigh,
+                              height: 48,
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: VirtualTextField(
-                                        decoration: InputDecoration(
-                                          hintText: 'Search name...',
-                                          prefixIcon: Icon(Icons.search),
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                        ),
-                                        onChanged: (value) {
-                                          _searchQuery = value;
-                                          filteredMembers.value = _backend
-                                              .attendance
-                                              .value
-                                              .where(
-                                                (member) => member.name
-                                                    .toLowerCase()
-                                                    .contains(
-                                                      _searchQuery
-                                                          .toLowerCase(),
-                                                    ),
-                                              )
-                                              .toList();
-                                        },
-                                      ),
+                                    SizedBox(width: 8),
+                                    IconButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          _currentBodyController.index = 0;
+                                        });
+                                      },
+                                      icon: Icon(Icons.arrow_back),
                                     ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: ValueListenableBuilder<List<Member>>(
-                                        valueListenable: _backend.attendance,
-                                        builder: (context, attendanceValue, child) {
-                                          filteredMembers.value = _backend
-                                              .attendance
-                                              .value
-                                              .where(
-                                                (member) => member.name
-                                                    .toLowerCase()
-                                                    .contains(
-                                                      _searchQuery
-                                                          .toLowerCase(),
-                                                    ),
-                                              )
-                                              .toList();
-                                          return ValueListenableBuilder(
-                                            valueListenable: filteredMembers,
-                                            builder: (context, filterValue, child) {
-                                              return ListView.builder(
-                                                itemCount: filterValue.length,
-                                                itemBuilder: (context, index) {
-                                                  final member =
-                                                      filterValue[index];
-                                                  return ListTile(
-                                                    leading: Stack(
-                                                      alignment:
-                                                          Alignment.bottomRight,
-                                                      children: [
-                                                        CircleAvatar(
-                                                          backgroundColor:
-                                                              HSVColor.fromColor(
-                                                                    ColorScheme.fromSeed(
-                                                                      seedColor:
-                                                                          Color(
-                                                                            member.hashCode,
-                                                                          ).withAlpha(
-                                                                            255,
-                                                                          ),
-
-                                                                      brightness:
-                                                                          Brightness
-                                                                              .dark,
-                                                                    ).primary,
-                                                                  )
-                                                                  .withAlpha(
-                                                                    0.5,
-                                                                  )
-                                                                  .withSaturation(
-                                                                    0.6,
-                                                                  )
-                                                                  .toColor(),
-                                                          child: Text(
-                                                            member.name
-                                                                .split(' ')
-                                                                .map(
-                                                                  (part) =>
-                                                                      part[0],
-                                                                )
-                                                                .take(2)
-                                                                .join(),
-                                                          ),
-                                                        ),
-                                                        Icon(
-                                                          Icons.circle,
-                                                          color:
-                                                              member.status ==
-                                                                  AttendanceStatus
-                                                                      .active
-                                                              ? Colors.green
-                                                              : Colors.red,
-                                                          size: 12,
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    title: Text(member.name),
-                                                    subtitle: Text(
-                                                      member.location == null
-                                                          ? member.privilege
-                                                                .toString()
-                                                                .split('.')
-                                                                .last
-                                                                .capitalize()
-                                                          : "${member.privilege.toString().split('.').last.capitalize()} · ${member.location!}",
-                                                    ),
-                                                    onTap: () {
-                                                      beginUserFlow(
-                                                        context,
-                                                        member,
-                                                        false,
-                                                      );
-                                                    },
-                                                  );
-                                                },
-                                              );
-                                            },
-                                          );
-                                        },
-                                      ),
+                                    Spacer(),
+                                    Text(
+                                      "Manual Name Selection",
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium,
                                     ),
-                                    SizedBox(
-                                      height: 200,
-                                      child: Container(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.surfaceContainerLowest,
-                                        child: Center(
-                                          child: VirtualKeyboard(
-                                            rootLayoutPath:
-                                                "assets/layouts/en-US.xml",
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                                    Spacer(),
                                   ],
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            Expanded(
+                              child: Listener(
+                                behavior: HitTestBehavior.translucent,
+                                onPointerDown: (ev) {
+                                  _nameSelectionScreenTimeout.cancel();
+                                },
+                                onPointerUp: (ev) {
+                                  _nameSelectionScreenTimeout.reset();
+                                },
+                                onPointerSignal: (ev) {
+                                  _nameSelectionScreenTimeout.reset();
+                                },
+                                child: Material(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerLow,
+                                  child: Column(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: VirtualTextField(
+                                          decoration: InputDecoration(
+                                            hintText: 'Search name...',
+                                            prefixIcon: Icon(Icons.search),
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                          onChanged: (value) {
+                                            _searchQuery = value;
+                                            filteredMembers.value = _backend
+                                                .attendance
+                                                .value
+                                                .where(
+                                                  (member) => member.name
+                                                      .toLowerCase()
+                                                      .contains(
+                                                        _searchQuery
+                                                            .toLowerCase(),
+                                                      ),
+                                                )
+                                                .toList();
+                                          },
+                                        ),
+                                      ),
+                                      Expanded(
+                                        flex: 2,
+                                        child: ValueListenableBuilder<List<Member>>(
+                                          valueListenable: _backend.attendance,
+                                          builder: (context, attendanceValue, child) {
+                                            filteredMembers.value = _backend
+                                                .attendance
+                                                .value
+                                                .where(
+                                                  (member) => member.name
+                                                      .toLowerCase()
+                                                      .contains(
+                                                        _searchQuery
+                                                            .toLowerCase(),
+                                                      ),
+                                                )
+                                                .toList();
+                                            return ValueListenableBuilder(
+                                              valueListenable: filteredMembers,
+                                              builder: (context, filterValue, child) {
+                                                return ListView.builder(
+                                                  itemCount: filterValue.length,
+                                                  itemBuilder: (context, index) {
+                                                    final member =
+                                                        filterValue[index];
+                                                    return ListTile(
+                                                      leading: Stack(
+                                                        alignment: Alignment
+                                                            .bottomRight,
+                                                        children: [
+                                                          CircleAvatar(
+                                                            backgroundColor: HSVColor.fromColor(
+                                                              ColorScheme.fromSeed(
+                                                                seedColor: Color(
+                                                                  member
+                                                                      .hashCode,
+                                                                ).withAlpha(255),
+
+                                                                brightness:
+                                                                    Brightness
+                                                                        .dark,
+                                                              ).primary,
+                                                            ).withAlpha(0.5).withSaturation(0.6).toColor(),
+                                                            child: Text(
+                                                              member.name
+                                                                  .split(' ')
+                                                                  .map(
+                                                                    (part) =>
+                                                                        part[0],
+                                                                  )
+                                                                  .take(2)
+                                                                  .join(),
+                                                            ),
+                                                          ),
+                                                          Icon(
+                                                            Icons.circle,
+                                                            color:
+                                                                member.status ==
+                                                                    AttendanceStatus
+                                                                        .active
+                                                                ? Colors.green
+                                                                : Colors.red,
+                                                            size: 12,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      title: Text(member.name),
+                                                      subtitle: Text(
+                                                        member.location == null
+                                                            ? member.privilege
+                                                                  .toString()
+                                                                  .split('.')
+                                                                  .last
+                                                                  .capitalize()
+                                                            : "${member.privilege.toString().split('.').last.capitalize()} · ${member.location!}",
+                                                      ),
+                                                      onTap: () {
+                                                        beginUserFlow(
+                                                          context,
+                                                          member,
+                                                          false,
+                                                        );
+                                                      },
+                                                    );
+                                                  },
+                                                );
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: 200,
+                                        child: Container(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.surfaceContainerLowest,
+                                          child: Center(
+                                            child: VirtualKeyboard(
+                                              rootLayoutPath:
+                                                  "assets/layouts/en-US.xml",
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

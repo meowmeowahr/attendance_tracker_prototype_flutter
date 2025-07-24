@@ -219,9 +219,12 @@ class _SettingsPageState extends State<SettingsPage> {
       });
     } else {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Invalid PIN')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Invalid PIN'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
       setState(() {
         _enteredPin = '';
       });
@@ -573,6 +576,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _editRfidSettings(BuildContext context) async {
+    print(
+      (_settingsManager.getValue<String>("rfid.serial.eol") ??
+              _settingsManager.getDefault<String>("rfid.serial.eol")!) ==
+          "\\n",
+    );
+    print(["NONE", "\\n", "\\r", "\\r\\n", "\\x02"]);
     return showDialog(
       context: context,
       builder: (context) {
@@ -618,40 +627,61 @@ class _SettingsPageState extends State<SettingsPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(height: 16.0),
-                        DropdownButtonFormField(
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(),
-                            label: Text("Port Path"),
-                          ),
-                          items: listPortPaths
-                              .map(
-                                (path) => DropdownMenuItem<String>(
-                                  value: path,
-                                  child: Text(path),
+                        FutureBuilder<List<String>>(
+                          future: listPortPaths,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            } else if (snapshot.hasData) {
+                              final List<String> availablePorts =
+                                  snapshot.data!;
+
+                              String? currentSelectedPort =
+                                  _settingsManager.getValue<String>(
+                                    "rfid.serial.port",
+                                  ) ??
+                                  _settingsManager.getDefault<String>(
+                                    "rfid.serial.port",
+                                  );
+
+                              if (currentSelectedPort != null &&
+                                  !availablePorts.contains(
+                                    currentSelectedPort,
+                                  )) {
+                                currentSelectedPort = null;
+                              }
+                              return DropdownButtonFormField<String>(
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  label: Text("Port Path"),
                                 ),
-                              )
-                              .toList(),
-                          value:
-                              listPortPaths.contains(
-                                _settingsManager.getValue<String>(
+                                items: availablePorts
+                                    .map(
+                                      (path) => DropdownMenuItem<String>(
+                                        value: path,
+                                        child: Text(path),
+                                      ),
+                                    )
+                                    .toList(),
+                                value: currentSelectedPort,
+                                onChanged: (newPath) {
+                                  setState(() {
+                                    _settingsManager.setValue(
                                       "rfid.serial.port",
-                                    ) ??
-                                    _settingsManager.getDefault<String>(
-                                      "rfid.serial.port",
-                                    )!,
-                              )
-                              ? (_settingsManager.getValue<String>(
-                                      "rfid.serial.port",
-                                    ) ??
-                                    _settingsManager.getDefault<String>(
-                                      "rfid.serial.port",
-                                    )!)
-                              : null,
-                          onChanged: (newPath) {
-                            _settingsManager.setValue(
-                              "rfid.serial.port",
-                              newPath,
-                            );
+                                      newPath,
+                                    );
+                                  });
+                                },
+                                hint: availablePorts.isEmpty
+                                    ? const Text("No ports available")
+                                    : null,
+                              );
+                            } else {
+                              return const Text('No ports found');
+                            }
                           },
                         ),
                         SizedBox(height: 8.0),
@@ -690,13 +720,11 @@ class _SettingsPageState extends State<SettingsPage> {
                                   border: OutlineInputBorder(),
                                   label: Text("SOI Character"),
                                 ),
-                                items: ["NONE", "\n", "\r", "\r\n", "\x02"]
+                                items: ["NONE", "\\n", "\\r", "\\r\\n", "\\x02"]
                                     .map(
                                       (sol) => DropdownMenuItem<String>(
                                         value: sol,
-                                        child: Text(
-                                          escapeFormatCharacters(sol),
-                                        ),
+                                        child: Text(sol),
                                       ),
                                     )
                                     .toList(),
@@ -722,13 +750,11 @@ class _SettingsPageState extends State<SettingsPage> {
                                   border: OutlineInputBorder(),
                                   label: Text("EOI Character"),
                                 ),
-                                items: ["\n", "\r", "\r\n", "\x03"]
+                                items: ["\\n", "\\r", "\\r\\n", "\\x03"]
                                     .map(
                                       (eol) => DropdownMenuItem<String>(
                                         value: eol,
-                                        child: Text(
-                                          escapeFormatCharacters(eol),
-                                        ),
+                                        child: Text(eol),
                                       ),
                                     )
                                     .toList(),
@@ -907,7 +933,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               .map(
                                 (eol) => DropdownMenuItem<String>(
                                   value: eol,
-                                  child: Text(escapeFormatCharacters(eol)),
+                                  child: Text(eol),
                                 ),
                               )
                               .toList(),
@@ -920,6 +946,32 @@ class _SettingsPageState extends State<SettingsPage> {
                               ) ??
                               _settingsManager.getDefault<String>(
                                 "rfid.hid.eol",
+                              )!,
+                        ),
+                        SizedBox(height: 8.0),
+                        DropdownButtonFormField(
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            label: Text("Data Format"),
+                          ),
+                          items: DataFormat.values.map((style) {
+                            return DropdownMenuItem<String>(
+                              value: style.toString().split('.').last,
+                              child: Text(style.toString().split('.').last),
+                            );
+                          }).toList(),
+                          onChanged: (newCsum) {
+                            _settingsManager.setValue(
+                              "rfid.hid.format",
+                              newCsum,
+                            );
+                          },
+                          value:
+                              _settingsManager.getValue<String>(
+                                "rfid.hid.format",
+                              ) ??
+                              _settingsManager.getDefault<String>(
+                                "rfid.hid.format",
                               )!,
                         ),
                       ],

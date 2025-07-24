@@ -26,29 +26,7 @@ class SettingsManager {
   static const String _prefix = 'settings.';
   SharedPreferences? prefs;
 
-  final Map<String, dynamic> _defaultSettings = {
-    'google.oauth_credentials': '',
-    'google.sheet_id': '',
-    'app.theme.mode': 'dark',
-    'app.theme.accent': 'blue',
-    'app.theme.logo': pngToBase64("assets/icons/punch_clock_240.png"),
-    'station.fixed': true,
-    'station.locations': [],
-    'station.location': null,
-    'security.pin': '',
-    'security.pin.require': true,
-    'rfid.reader': 'hid',
-    'rfid.hid.timeout': 0.2,
-    'rfid.hid.eol': 'RETURN',
-    'rfid.serial.port': '/dev/ttyAMA0',
-    'rfid.serial.baud': 9600,
-    'rfid.serial.timeout': 0.5,
-    'rfid.serial.eol': '\n',
-    'rfid.serial.sol': 'NONE',
-    'rfid.serial.format': 'decAscii',
-    'rfid.serial.checksum': 'none',
-    'rfid.serial.checksum.pos': 'end',
-  };
+  Map<String, dynamic> _defaultSettings = {};
 
   SettingsManager._privateConstructor();
   static final SettingsManager _instance =
@@ -62,6 +40,32 @@ class SettingsManager {
         await setValue(entry.key, entry.value);
       }
     }
+    _defaultSettings = {
+      'google.oauth_credentials': '',
+      'google.sheet_id': '',
+      'app.theme.mode': 'dark',
+      'app.theme.accent': 'blue',
+      'app.theme.logo': await assetPngToBase64(
+        "assets/icons/punch_clock_240.png",
+      ),
+      'station.fixed': true,
+      'station.locations': [],
+      'station.location': null,
+      'security.pin': '',
+      'security.pin.require': true,
+      'rfid.reader': 'hid',
+      'rfid.hid.timeout': 0.2,
+      'rfid.hid.eol': 'RETURN',
+      'rfid.hid.format': 'decAscii',
+      'rfid.serial.port': '/dev/ttyAMA0',
+      'rfid.serial.baud': 9600,
+      'rfid.serial.timeout': 0.5,
+      'rfid.serial.eol': '\\n',
+      'rfid.serial.sol': 'NONE',
+      'rfid.serial.format': 'decAscii',
+      'rfid.serial.checksum': 'none',
+      'rfid.serial.checksum.pos': 'end',
+    };
   }
 
   T? getDefault<T>(String key) {

@@ -96,7 +96,10 @@ class _UserFlowState extends State<UserFlow> {
                   } else {
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Invalid PIN')),
+                      SnackBar(
+                        content: Text('Invalid PIN'),
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                      ),
                     );
                     setState(() {
                       _enteredPin = '';
@@ -137,7 +140,9 @@ class _UserFlowState extends State<UserFlow> {
       body:
           !_isPinVerified &&
               widget.user.privilege == MemberPrivilege.admin &&
-              (_settingsManager.getValue<bool>("security.pin.require") ?? true)
+              (_settingsManager.getValue<bool>("security.pin.require") ??
+                  true) &&
+              widget.requireAdminPinEntry
           ? _buildPinEntry(context)
           : Padding(
               padding: const EdgeInsets.all(16.0),
