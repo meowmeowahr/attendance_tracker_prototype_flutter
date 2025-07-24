@@ -37,6 +37,12 @@ class SettingsManager {
     'station.location': null,
     'security.pin': '',
     'security.pin.require': true,
+    'rfid.reader': 'hid',
+    'rfid.hid.timeout': 0.2,
+    'rfid.serial.port': '/dev/ttyAMA0',
+    'rfid.serial.baud': 9600,
+    'rfid.serial.timeout': 0.5,
+    'rfid.serial.eol': '\n',
   };
 
   SettingsManager._privateConstructor();

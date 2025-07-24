@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:attendance_tracker/image_util.dart';
+import 'package:attendance_tracker/serial.dart';
 import 'package:attendance_tracker/settings.dart';
 import 'package:attendance_tracker/string_ext.dart';
+import 'package:attendance_tracker/util.dart';
 import 'package:attendance_tracker/widgets.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class PinKeypad extends StatelessWidget {
   final Function(String) onKeyPressed;
@@ -569,6 +572,197 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Future<void> _editRfidSettings(BuildContext context) async {
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: Text("RFID Reader"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SegmentedButton(
+                  segments: [
+                    ButtonSegment(
+                      value: "hid",
+                      label: Text("HID"),
+                      icon: Icon(Icons.keyboard),
+                    ),
+                    ButtonSegment(
+                      value: "serial",
+                      label: Text("Serial"),
+                      icon: Icon(Icons.cable),
+                    ),
+                  ],
+                  selected: {
+                    _settingsManager.getValue<String>("rfid.reader") ??
+                        _settingsManager.getDefault<String>("rfid.reader")!,
+                  },
+                  onSelectionChanged: (selection) {
+                    setState(() {
+                      _settingsManager.setValue("rfid.reader", selection.first);
+                    });
+                  },
+                ),
+                if ((_settingsManager.getValue<String>("rfid.reader") ??
+                        _settingsManager.getDefault<String>("rfid.reader")!) ==
+                    "serial")
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: 16.0),
+                      DropdownButtonFormField(
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          label: Text("Port Path"),
+                        ),
+                        items: listPortPaths
+                            .map(
+                              (path) => DropdownMenuItem<String>(
+                                value: path,
+                                child: Text(path),
+                              ),
+                            )
+                            .toList(),
+                        value:
+                            _settingsManager.getValue<String>(
+                              "rfid.serial.port",
+                            ) ??
+                            _settingsManager.getDefault<String>(
+                              "rfid.serial.port",
+                            )!,
+                        onChanged: (newPath) {
+                          _settingsManager.setValue(
+                            "rfid.serial.port",
+                            newPath,
+                          );
+                        },
+                      ),
+                      SizedBox(height: 8.0),
+                      TextField(
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: "Baudrate",
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        controller: TextEditingController(
+                          text:
+                              (_settingsManager.getValue<int>(
+                                        "rfid.serial.baud",
+                                      ) ??
+                                      _settingsManager.getDefault<int>(
+                                        "rfid.serial.baud",
+                                      )!)
+                                  .toString(),
+                        ),
+                        onChanged: (newBaudrate) {
+                          _settingsManager.setValue(
+                            "rfid.serial.baud",
+                            int.tryParse(newBaudrate),
+                          );
+                        },
+                      ),
+                      SizedBox(height: 8.0),
+                      DropdownButtonFormField(
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          label: Text("End-of-Input Character"),
+                        ),
+                        items: ["NONE", "\n", "\r", "\r\n"]
+                            .map(
+                              (eol) => DropdownMenuItem<String>(
+                                value: eol,
+                                child: Text(escapeFormatCharacters(eol)),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (newEOL) {
+                          _settingsManager.setValue("rfid.serial.eol", newEOL);
+                        },
+                        value:
+                            _settingsManager.getValue<String>(
+                              "rfid.serial.eol",
+                            ) ??
+                            _settingsManager.getDefault<String>(
+                              "rfid.serial.eol",
+                            )!,
+                      ),
+                      SizedBox(height: 4.0),
+                      Text(
+                        "Timeout (seconds):",
+                        textAlign: TextAlign.left,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      DoubleSpinBox(
+                        initialValue:
+                            _settingsManager.getValue<double>(
+                              "rfid.serial.timeout",
+                            ) ??
+                            _settingsManager.getDefault<double>(
+                              "rfid.serial.timeout",
+                            )!,
+                        min: 0.1,
+                        max: 10.0,
+                        step: 0.1,
+                        onChanged: (newTimeout) {
+                          _settingsManager.setValue(
+                            "rfid.serial.timeout",
+                            newTimeout,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                if ((_settingsManager.getValue<String>("rfid.reader") ??
+                        _settingsManager.getDefault<String>("rfid.reader")!) ==
+                    "hid")
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: 12.0),
+                      Text(
+                        "Timeout (seconds):",
+                        textAlign: TextAlign.left,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      DoubleSpinBox(
+                        initialValue:
+                            _settingsManager.getValue<double>(
+                              "rfid.hid.timeout",
+                            ) ??
+                            _settingsManager.getDefault<double>(
+                              "rfid.hid.timeout",
+                            )!,
+                        min: 0.1,
+                        max: 3.0,
+                        step: 0.1,
+                        onChanged: (newTimeout) {
+                          _settingsManager.setValue(
+                            "rfid.hid.timeout",
+                            newTimeout,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Exit'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _exportSettings(BuildContext context) async {
     try {
       final json = await _settingsManager.exportToJson();
@@ -720,6 +914,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 ListTile(
                   tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
+                  title: Text("RFID Card Reader Settings"),
+                  subtitle: Text(
+                    "Settings for the Serial/HID RFID Card Reader",
+                  ),
+                  leading: Icon(Icons.contactless),
+                  trailing: IconButton(
+                    onPressed: () => _editRfidSettings(context),
+                    icon: const Icon(Icons.edit),
+                  ),
+                ),
+                ListTile(
                   title: const Text("Export Settings"),
                   subtitle: const Text("Export settings as JSON file"),
                   leading: const Icon(Icons.download),
@@ -729,6 +934,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 ListTile(
+                  tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
                   title: const Text("Import Settings"),
                   subtitle: const Text("Import settings from JSON file"),
                   leading: const Icon(Icons.upload),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class RfidTapCard extends StatelessWidget {
   const RfidTapCard({super.key});
@@ -147,4 +148,76 @@ class _StripePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+class DoubleSpinBox extends StatefulWidget {
+  final double min;
+  final double max;
+  final double step;
+  final double initialValue;
+  final ValueChanged<double>? onChanged;
+
+  const DoubleSpinBox({
+    super.key,
+    this.min = 0.1,
+    this.max = 2.0,
+    this.step = 0.1,
+    this.initialValue = 1.0,
+    this.onChanged,
+  });
+
+  @override
+  State<DoubleSpinBox> createState() => _DoubleSpinBoxState();
+}
+
+class _DoubleSpinBoxState extends State<DoubleSpinBox> {
+  late TextEditingController _controller;
+  late double _value;
+
+  @override
+  void initState() {
+    super.initState();
+    _value = widget.initialValue.clamp(widget.min, widget.max);
+    _controller = TextEditingController(text: _value.toStringAsFixed(2));
+  }
+
+  void _setValue(double newVal) {
+    final clamped = newVal.clamp(widget.min, widget.max);
+    setState(() {
+      _value = clamped;
+      _controller.text = _value.toStringAsFixed(2);
+      _controller.selection = TextSelection.fromPosition(
+        TextPosition(offset: _controller.text.length),
+      );
+    });
+    widget.onChanged?.call(_value);
+  }
+
+  void _increment() => _setValue(_value + widget.step);
+  void _decrement() => _setValue(_value - widget.step);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
+        borderRadius: BorderRadius.circular(4.0),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: Row(
+          children: [
+            IconButton(onPressed: _decrement, icon: const Icon(Icons.remove)),
+            Expanded(
+              child: Text(
+                _value.toStringAsFixed(2),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            IconButton(onPressed: _increment, icon: const Icon(Icons.add)),
+          ],
+        ),
+      ),
+    );
+  }
 }

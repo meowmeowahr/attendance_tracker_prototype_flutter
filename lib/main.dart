@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:attendance_tracker/backend.dart';
 import 'package:attendance_tracker/keyboard.dart';
+import 'package:attendance_tracker/rfid_event.dart';
 import 'package:attendance_tracker/settings.dart';
 import 'package:attendance_tracker/settings_page.dart';
 import 'package:attendance_tracker/string_ext.dart';
@@ -119,11 +120,17 @@ class _HomePageState extends State<HomePage>
 
   late ValueNotifier<Uint8List> _homeScreenImage;
 
+  late StreamController<RfidEvent> _rfidHidStreamController;
+  late Stream<RfidEvent> _rfidHidStream;
+
   @override
   void initState() {
     super.initState();
+    // backend
     _backend = AttendanceTrackerBackend();
     _backend.initialize();
+
+    // search filter
     filteredMembers = ValueNotifier(
       _backend.attendance.value
           .where(
@@ -132,10 +139,14 @@ class _HomePageState extends State<HomePage>
           )
           .toList(),
     );
+
+    // clock
     _now = ValueNotifier(DateTime.now());
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (Timer timer) {
       _now.value = DateTime.now();
     });
+
+    // ui
     _currentBodyController = TabController(
       length: 2,
       vsync: this,
@@ -151,6 +162,21 @@ class _HomePageState extends State<HomePage>
       _currentBodyController.index = 0;
     });
     _nameSelectionScreenTimeout.cancel();
+
+    // rfid
+    _rfidHidStreamController = StreamController<RfidEvent>.broadcast();
+    _rfidHidStream = _rfidHidStreamController.stream;
+    ServicesBinding.instance.keyboard.addHandler((event) {
+      if (event is KeyDownEvent && event.character != null) {
+        _rfidHidStreamController.sink.add(
+          RfidEvent(
+            event.character!,
+            DateTime.fromMicrosecondsSinceEpoch(event.timeStamp.inMilliseconds),
+          ),
+        );
+      }
+      return false; // reject the event, pass to widgets
+    });
   }
 
   @override
