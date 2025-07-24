@@ -118,7 +118,6 @@ class _HomePageState extends State<HomePage>
 
   // home screen state
   late ValueNotifier<AppState> _homeScreenState;
-  late Timer _homeScreenStateTimer;
 
   // home tabs
   late RestartableTimer _nameSelectionScreenTimeout;
@@ -171,9 +170,7 @@ class _HomePageState extends State<HomePage>
 
     // home screen state
     _homeScreenState = ValueNotifier(AppState.initial);
-    _homeScreenStateTimer = Timer.periodic(const Duration(seconds: 10), (
-      Timer timer,
-    ) {
+    Timer.periodic(const Duration(seconds: 10), (Timer timer) {
       _homeScreenState.value = _getStatus();
     });
 
