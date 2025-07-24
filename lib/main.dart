@@ -5,14 +5,18 @@ import 'dart:convert';
 import 'package:attendance_tracker/backend.dart';
 import 'package:attendance_tracker/keyboard.dart';
 import 'package:attendance_tracker/rfid_event.dart';
+import 'package:attendance_tracker/serial.dart';
 import 'package:attendance_tracker/settings.dart';
 import 'package:attendance_tracker/settings_page.dart';
+import 'package:attendance_tracker/state.dart';
 import 'package:attendance_tracker/string_ext.dart';
 import 'package:attendance_tracker/user_flow.dart';
+import 'package:attendance_tracker/util.dart';
 import 'package:attendance_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 
 void main() async {
   final settings = SettingsManager();
@@ -108,20 +112,39 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  // clock
   late ValueNotifier<DateTime> _now;
   late Timer _clockTimer;
+
+  // home screen state
+  late ValueNotifier<AppState> _homeScreenState;
+  late Timer _homeScreenStateTimer;
+
+  // home tabs
   late RestartableTimer _nameSelectionScreenTimeout;
   late TabController _currentBodyController;
 
+  // backend
   late AttendanceTrackerBackend _backend;
 
+  // name search
   String _searchQuery = '';
   late ValueNotifier<List<Member>> filteredMembers;
 
+  // home screen image
   late ValueNotifier<Uint8List> _homeScreenImage;
 
+  // rfid
+  bool rfidScanInActive = true;
+
+  // rfid hid
   late StreamController<RfidEvent> _rfidHidStreamController;
   late Stream<RfidEvent> _rfidHidStream;
+  final List<RfidEvent> _rfidHidInWaiting = [];
+  late RestartableTimer _rfidHidTimeoutTimer;
+
+  // rfid serial
+  final SerialRfidStream _rfidSerialStreamer = SerialRfidStream();
 
   @override
   void initState() {
@@ -146,6 +169,14 @@ class _HomePageState extends State<HomePage>
       _now.value = DateTime.now();
     });
 
+    // home screen state
+    _homeScreenState = ValueNotifier(AppState.initial);
+    _homeScreenStateTimer = Timer.periodic(const Duration(seconds: 10), (
+      Timer timer,
+    ) {
+      _homeScreenState.value = _getStatus();
+    });
+
     // ui
     _currentBodyController = TabController(
       length: 2,
@@ -163,11 +194,15 @@ class _HomePageState extends State<HomePage>
     });
     _nameSelectionScreenTimeout.cancel();
 
-    // rfid
+    // rfid hid
     _rfidHidStreamController = StreamController<RfidEvent>.broadcast();
     _rfidHidStream = _rfidHidStreamController.stream;
     ServicesBinding.instance.keyboard.addHandler((event) {
-      if (event is KeyDownEvent && event.character != null) {
+      if (event is KeyDownEvent &&
+          event.character != null &&
+          (widget.settingsManager.getValue<String>("rfid.reader") ??
+                  widget.settingsManager.getDefault<String>("rfid.reader")!) ==
+              "hid") {
         _rfidHidStreamController.sink.add(
           RfidEvent(
             event.character!,
@@ -177,6 +212,144 @@ class _HomePageState extends State<HomePage>
       }
       return false; // reject the event, pass to widgets
     });
+    _rfidHidTimeoutTimer = RestartableTimer(
+      Duration(
+        milliseconds:
+            (widget.settingsManager.getValue<double>("rfid.hid.timeout") ??
+                    widget.settingsManager.getDefault<double>(
+                          "rfid.hid.timeout",
+                        )! *
+                        1000)
+                .ceil(),
+      ),
+      () {
+        if (_rfidHidInWaiting.isNotEmpty) {
+          // quick sanity check
+          final Map<String, String?> eolMap = {
+            "SPACE": " ",
+            "RETURN": "\r",
+            "NONE": null,
+          };
+          if (_rfidHidInWaiting.last.char ==
+              eolMap[widget.settingsManager.getValue<String>("rfid.hid.eol") ??
+                  widget.settingsManager.getDefault<String>("rfid.hid.eol")!]) {
+            return;
+          }
+
+          // process
+          _processRfid(
+            int.tryParse(_rfidHidInWaiting.map((ev) => ev.char).join("")),
+          );
+          _rfidHidInWaiting.clear(); // clear the queue
+        }
+      },
+    );
+    _rfidHidStream.listen((event) {
+      _rfidHidTimeoutTimer.reset(); // reset the timeout
+      _rfidHidInWaiting.add(event); // add new event
+      final Map<String, String?> eolMap = {
+        "SPACE": " ",
+        "RETURN": "\r",
+        "NONE": null,
+      };
+      if (event.char ==
+          eolMap[widget.settingsManager.getValue<String>("rfid.hid.eol") ??
+              widget.settingsManager.getDefault<String>("rfid.hid.eol")!]) {
+        // end-of-line
+        _processRfid(
+          int.tryParse(_rfidHidInWaiting.map((ev) => ev.char).join("")),
+        );
+        _rfidHidInWaiting.clear(); // clear the queue
+      }
+    });
+
+    // rfid serial
+    if ((widget.settingsManager.getValue<String>("rfid.reader") ??
+            widget.settingsManager.getDefault<String>("rfid.reader")!) ==
+        "serial") {
+      _rfidSerialStreamer.configure(
+        portPath:
+            widget.settingsManager.getValue<String>("rfid.serial.port") ??
+            widget.settingsManager.getDefault<String>("rfid.serial.port")!,
+        baudRate:
+            widget.settingsManager.getValue<int>("rfid.serial.baud") ??
+            widget.settingsManager.getDefault<int>("rfid.serial.baud")!,
+        readTimeoutMs:
+            ((widget.settingsManager.getValue<double>("rfid.serial.timeout") ??
+                        widget.settingsManager.getDefault<double>(
+                          "rfid.serial.timeout",
+                        )!) *
+                    1000)
+                .ceil(),
+        eolString:
+            widget.settingsManager.getValue<String>("rfid.serial.eol") ??
+            widget.settingsManager.getDefault<String>("rfid.serial.eol")!,
+        solString:
+            widget.settingsManager.getValue<String>("rfid.serial.sol") ??
+            widget.settingsManager.getDefault<String>("rfid.serial.sol")!,
+        dataFormat: DataFormat.values.byName(
+          widget.settingsManager.getValue<String>("rfid.serial.format") ??
+              widget.settingsManager.getDefault<String>("rfid.serial.format")!,
+        ),
+        checksumStyle: ChecksumStyle.values.byName(
+          widget.settingsManager.getValue<String>("rfid.serial.checksum") ??
+              widget.settingsManager.getDefault<String>(
+                "rfid.serial.checksum",
+              )!,
+        ),
+        checksumPosition: ChecksumPosition.values.byName(
+          widget.settingsManager.getValue<String>("rfid.serial.checksum.pos") ??
+              widget.settingsManager.getDefault<String>(
+                "rfid.serial.checksum.pos",
+              )!,
+        ),
+      );
+      final connOk = _rfidSerialStreamer.connect(); // attempt to connect
+      _rfidSerialStreamer.stream.listen((data) => _processRfid(data));
+      print("Connection to startup serial port: $connOk");
+    }
+  }
+
+  void _processRfid(int? code) {
+    if (!rfidScanInActive) {
+      print("RFID processing paused. Ignoring tag");
+      return;
+    }
+    print("Process RFID Tag: $code");
+    if (code == null) {
+      print("Invalid RFID tag, please try again");
+      _displayErrorPopup("Badge Read Error");
+      return;
+    }
+    if (!_backend.isMember(code)) {
+      _displayErrorPopup("Member Not Found");
+      return;
+    }
+    beginUserFlow(context, _backend.getMemberById(code), true);
+  }
+
+  void _displayErrorPopup(String error) {
+    showDialog(
+      barrierColor: Colors.red.withAlpha(40),
+      barrierDismissible: false,
+      context: context,
+      builder: (context) {
+        Timer(Duration(seconds: 1), () {
+          Navigator.of(context).pop();
+        });
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Lottie.asset('assets/animations/fail.json', reverse: true),
+              Text(error, style: Theme.of(context).textTheme.titleLarge),
+            ],
+          ),
+          actionsPadding: EdgeInsets.zero,
+          actions: [],
+        );
+      },
+    );
   }
 
   @override
@@ -187,10 +360,12 @@ class _HomePageState extends State<HomePage>
   @override
   void dispose() {
     _clockTimer.cancel();
+    _rfidSerialStreamer.disconnect();
     super.dispose();
   }
 
-  void beginUserFlow(BuildContext context, Member user) {
+  void beginUserFlow(BuildContext context, Member user, bool fromRfid) {
+    rfidScanInActive = false;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -207,9 +382,32 @@ class _HomePageState extends State<HomePage>
           fixedLocation:
               widget.settingsManager.getValue<String>('station.location') ??
               "Shop",
+          requireAdminPinEntry: !fromRfid,
         ),
       ),
-    );
+    ).then((_) {
+      rfidScanInActive = true;
+    });
+  }
+
+  AppState _getStatus() {
+    if ((widget.settingsManager.getValue<String>("rfid.reader") ??
+                widget.settingsManager.getDefault<String>("rfid.reader")!) ==
+            "serial" &&
+        !_rfidSerialStreamer.isConnected &&
+        _rfidSerialStreamer.portError != null) {
+      return AppState(
+        Colors.red,
+        "RFID Reader Connection Error: ${_rfidSerialStreamer.portError}",
+      );
+    } else if ((widget.settingsManager.getValue<String>("rfid.reader") ??
+                widget.settingsManager.getDefault<String>("rfid.reader")!) ==
+            "serial" &&
+        !_rfidSerialStreamer.isConnected) {
+      return AppState(Colors.red, "RFID Reader Connection Lost");
+    } else {
+      return AppState(Colors.green, "System Ready");
+    }
   }
 
   @override
@@ -260,6 +458,7 @@ class _HomePageState extends State<HomePage>
                       value: 'settings',
                       child: Text('Settings'),
                       onTap: () {
+                        rfidScanInActive = false;
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -267,6 +466,8 @@ class _HomePageState extends State<HomePage>
                                 SettingsPage(widget.themeController),
                           ),
                         ).then((_) {
+                          // navigate back
+                          rfidScanInActive = true;
                           setState(() {
                             _homeScreenImage.value = base64.decode(
                               widget.settingsManager.getValue<String>(
@@ -277,6 +478,84 @@ class _HomePageState extends State<HomePage>
                                   )!,
                             );
                           });
+                          // rfid serial
+                          if ((widget.settingsManager.getValue<String>(
+                                    "rfid.reader",
+                                  ) ??
+                                  widget.settingsManager.getDefault<String>(
+                                    "rfid.reader",
+                                  )!) ==
+                              "serial") {
+                            _rfidSerialStreamer.configure(
+                              portPath:
+                                  widget.settingsManager.getValue<String>(
+                                    "rfid.serial.port",
+                                  ) ??
+                                  widget.settingsManager.getDefault<String>(
+                                    "rfid.serial.port",
+                                  )!,
+                              baudRate:
+                                  widget.settingsManager.getValue<int>(
+                                    "rfid.serial.baud",
+                                  ) ??
+                                  widget.settingsManager.getDefault<int>(
+                                    "rfid.serial.baud",
+                                  )!,
+                              readTimeoutMs:
+                                  ((widget.settingsManager.getValue<double>(
+                                                "rfid.serial.timeout",
+                                              ) ??
+                                              widget.settingsManager
+                                                  .getDefault<double>(
+                                                    "rfid.serial.timeout",
+                                                  )!) *
+                                          1000)
+                                      .ceil(),
+                              eolString:
+                                  widget.settingsManager.getValue<String>(
+                                    "rfid.serial.eol",
+                                  ) ??
+                                  widget.settingsManager.getDefault<String>(
+                                    "rfid.serial.eol",
+                                  )!,
+                              solString:
+                                  widget.settingsManager.getValue<String>(
+                                    "rfid.serial.sol",
+                                  ) ??
+                                  widget.settingsManager.getDefault<String>(
+                                    "rfid.serial.sol",
+                                  )!,
+                              dataFormat: DataFormat.values.byName(
+                                widget.settingsManager.getValue<String>(
+                                      "rfid.serial.format",
+                                    ) ??
+                                    widget.settingsManager.getDefault<String>(
+                                      "rfid.serial.format",
+                                    )!,
+                              ),
+                              checksumStyle: ChecksumStyle.values.byName(
+                                widget.settingsManager.getValue<String>(
+                                      "rfid.serial.checksum",
+                                    ) ??
+                                    widget.settingsManager.getDefault<String>(
+                                      "rfid.serial.checksum",
+                                    )!,
+                              ),
+                              checksumPosition: ChecksumPosition.values.byName(
+                                widget.settingsManager.getValue<String>(
+                                      "rfid.serial.checksum.pos",
+                                    ) ??
+                                    widget.settingsManager.getDefault<String>(
+                                      "rfid.serial.checksum.pos",
+                                    )!,
+                              ),
+                            );
+                            final connOk = _rfidSerialStreamer
+                                .connect(); // attempt to connect
+                            print(
+                              "Connection to post-setup serial port: $connOk",
+                            );
+                          }
                         });
                       },
                     ),
@@ -369,16 +648,21 @@ class _HomePageState extends State<HomePage>
                               Card.filled(
                                 child: Padding(
                                   padding: const EdgeInsets.all(8.0),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.circle,
-                                        color: Colors.green,
-                                        size: 18,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text("System Ready"),
-                                    ],
+                                  child: ValueListenableBuilder(
+                                    valueListenable: _homeScreenState,
+                                    builder: (context, value, child) {
+                                      return Row(
+                                        children: [
+                                          Icon(
+                                            Icons.circle,
+                                            color: value.color,
+                                            size: 18,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text(value.description),
+                                        ],
+                                      );
+                                    },
                                   ),
                                 ),
                               ),
@@ -555,6 +839,7 @@ class _HomePageState extends State<HomePage>
                                                       beginUserFlow(
                                                         context,
                                                         member,
+                                                        false,
                                                       );
                                                     },
                                                   );

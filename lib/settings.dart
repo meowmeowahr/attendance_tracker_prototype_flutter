@@ -39,10 +39,15 @@ class SettingsManager {
     'security.pin.require': true,
     'rfid.reader': 'hid',
     'rfid.hid.timeout': 0.2,
+    'rfid.hid.eol': 'RETURN',
     'rfid.serial.port': '/dev/ttyAMA0',
     'rfid.serial.baud': 9600,
     'rfid.serial.timeout': 0.5,
     'rfid.serial.eol': '\n',
+    'rfid.serial.sol': 'NONE',
+    'rfid.serial.format': 'decAscii',
+    'rfid.serial.checksum': 'none',
+    'rfid.serial.checksum.pos': 'end',
   };
 
   SettingsManager._privateConstructor();

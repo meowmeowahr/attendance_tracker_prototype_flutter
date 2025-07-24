@@ -19,6 +19,11 @@ class Member {
     this.location,
     this.privilege = MemberPrivilege.student,
   });
+
+  @override
+  String toString() {
+    return 'Member{id: $id, name: $name, status: $status, location: $location, privilege: $privilege}';
+  }
 }
 
 class ClockInEvent {
@@ -39,24 +44,14 @@ class ClockOutEvent {
 class AttendanceTrackerBackend {
   final _clockInQueue = Queue<ClockInEvent>();
   final _clockOutQueue = Queue<ClockOutEvent>();
-  ValueNotifier<List<Member>> attendance = ValueNotifier([
-    Member(
-      1,
-      'John Middle Doe',
-      AttendanceStatus.active,
-      location: "Outreach Event",
-      privilege: MemberPrivilege.admin,
-    ),
-    Member(2, 'Jane Smith', AttendanceStatus.inactive),
-    Member(3, 'Alice Johnson', AttendanceStatus.active, location: "Shop"),
-  ]);
+  ValueNotifier<List<Member>> attendance = ValueNotifier([]);
 
   void initialize() async {
     _clockInQueue.clear();
     _clockOutQueue.clear();
     attendance.value = [
       Member(
-        1,
+        1193046,
         'John Middle Doe',
         AttendanceStatus.active,
         location: "Outreach Event",
@@ -70,6 +65,14 @@ class AttendanceTrackerBackend {
   Future<List<String>> fetchNames() async {
     await Future.delayed(Duration(seconds: 1));
     return attendance.value.map((member) => member.name).toList();
+  }
+
+  Member getMemberById(int id) {
+    return attendance.value.firstWhere((member) => member.id == id);
+  }
+
+  bool isMember(int id) {
+    return attendance.value.any((member) => member.id == id);
   }
 
   void clockOut(int memberId) {
