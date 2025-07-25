@@ -432,7 +432,6 @@ class _HomePageState extends State<HomePage>
 
   void beginUserFlow(BuildContext context, Member user, bool fromRfid) {
     rfidScanInActive = false;
-    final prevMembers = _backend.attendance.value;
     Navigator.push(
       context,
       MaterialPageRoute(

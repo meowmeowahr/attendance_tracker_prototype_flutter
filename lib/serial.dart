@@ -341,9 +341,6 @@ class SerialRfidStream {
     final eolBytes = Uint8List.fromList(eolString!.codeUnits);
 
     while (_inWaiting.isNotEmpty) {
-      print("ne");
-      print(_inWaiting);
-      print(eolString);
       List<int> message;
       int endIndex;
 
