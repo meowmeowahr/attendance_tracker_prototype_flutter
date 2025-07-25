@@ -266,11 +266,7 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Google OAuth Credentials'),
-        content: TextField(
-          controller: _oauthController,
-          maxLines: 5,
-          decoration: const InputDecoration(hintText: 'Enter OAuth JSON'),
-        ),
+        content: const Text('Select your Google OAuth JSON credentials file.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -279,20 +275,31 @@ class _SettingsPageState extends State<SettingsPage> {
           TextButton(
             onPressed: () async {
               try {
-                jsonDecode(_oauthController.text);
+                final result = await FilePicker.platform.pickFiles(
+                  type: FileType.custom,
+                  allowedExtensions: ['json'],
+                );
+                if (result == null || result.files.single.path == null) return;
+
+                final file = File(result.files.single.path!);
+                final contents = await file.readAsString();
+
+                // Validate JSON
+                jsonDecode(contents);
+
                 await _settingsManager.setValue(
                   'google.oauth_credentials',
-                  _oauthController.text,
+                  contents,
                 );
                 if (!context.mounted) return;
                 Navigator.pop(context);
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Invalid JSON format')),
+                  const SnackBar(content: Text('Invalid JSON file')),
                 );
               }
             },
-            child: const Text('Save'),
+            child: const Text('Select File'),
           ),
         ],
       ),
