@@ -151,7 +151,11 @@ class _HomePageState extends State<HomePage>
     super.initState();
     // backend
     _backend = AttendanceTrackerBackend();
-    _backend.initialize();
+    _backend.initialize(
+      widget.settingsManager.getValue<String>('google.sheet_id') ?? '',
+      widget.settingsManager.getValue<String>('google.oauth_credentials') ??
+          '{}',
+    );
 
     // search filter
     filteredMembers = ValueNotifier(
@@ -450,10 +454,7 @@ class _HomePageState extends State<HomePage>
       ),
     ).then((_) {
       rfidScanInActive = true;
-      final newMembers = _backend.attendance.value;
-      print(newMembers);
-      print(prevMembers);
-      if (newMembers != prevMembers) {
+      if (_backend.getMemberById(user.id).status != user.status) {
         _displaySuccessPopup();
       }
     });
@@ -474,6 +475,8 @@ class _HomePageState extends State<HomePage>
             "serial" &&
         !_rfidSerialStreamer.isConnected) {
       return AppState(Colors.red, "RFID Reader Connection Lost");
+    } else if (_backend.googleConnected.value == false) {
+      return AppState(Colors.amber, "Google Connection Lost");
     } else {
       return AppState(Colors.green, "System Ready");
     }
@@ -630,6 +633,18 @@ class _HomePageState extends State<HomePage>
                                 "Connection to post-setup serial port: $connOk",
                               );
                             }
+
+                            // backend
+                            _backend.initialize(
+                              widget.settingsManager.getValue<String>(
+                                    'google.sheet_id',
+                                  ) ??
+                                  '',
+                              widget.settingsManager.getValue<String>(
+                                    'google.oauth_credentials',
+                                  ) ??
+                                  '{}',
+                            );
                           });
                         },
                       ),
@@ -881,7 +896,7 @@ class _HomePageState extends State<HomePage>
                                                             color:
                                                                 member.status ==
                                                                     AttendanceStatus
-                                                                        .active
+                                                                        .present
                                                                 ? Colors.green
                                                                 : Colors.red,
                                                             size: 12,
@@ -890,7 +905,9 @@ class _HomePageState extends State<HomePage>
                                                       ),
                                                       title: Text(member.name),
                                                       subtitle: Text(
-                                                        member.location == null
+                                                        member.status ==
+                                                                AttendanceStatus
+                                                                    .out
                                                             ? member.privilege
                                                                   .toString()
                                                                   .split('.')

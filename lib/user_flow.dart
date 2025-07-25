@@ -166,7 +166,7 @@ class _UserFlowState extends State<UserFlow> {
                       ),
                     ),
                     Spacer(),
-                    if (widget.user.status == AttendanceStatus.active)
+                    if (widget.user.status == AttendanceStatus.present)
                       Text(
                         "Leaving: ${widget.user.location}",
                         style: Theme.of(context).textTheme.bodyLarge,
@@ -207,7 +207,7 @@ class _UserFlowState extends State<UserFlow> {
                         Expanded(
                           child: FilledButton(
                             onPressed:
-                                widget.user.status == AttendanceStatus.inactive
+                                widget.user.status == AttendanceStatus.out
                                 ? () {
                                     setState(() {
                                       widget.backend.clockIn(
@@ -236,7 +236,7 @@ class _UserFlowState extends State<UserFlow> {
                         Expanded(
                           child: FilledButton(
                             onPressed:
-                                widget.user.status == AttendanceStatus.active
+                                widget.user.status == AttendanceStatus.present
                                 ? () {
                                     setState(() {
                                       widget.backend.clockOut(widget.user.id);

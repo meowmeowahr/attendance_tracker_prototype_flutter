@@ -41,7 +41,7 @@ class SettingsManager {
       }
     }
     _defaultSettings = {
-      'google.oauth_credentials': '',
+      'google.oauth_credentials': '{}',
       'google.sheet_id': '',
       'app.theme.mode': 'dark',
       'app.theme.accent': 'blue',
