@@ -19,6 +19,23 @@ String unescapeFormatCharacters(String input) {
   return input;
 }
 
+String columnToReference(int col) {
+  if (col <= 0) {
+    throw ArgumentError('Column number must be a positive integer.');
+  }
+
+  var result = '';
+  var current = col;
+
+  while (current > 0) {
+    final remainder = (current - 1) % 26;
+    result = String.fromCharCode(65 + remainder) + result;
+    current = (current - 1) ~/ 26;
+  }
+
+  return result;
+}
+
 enum ChecksumStyle { none, xor2hex, xor1byte }
 
 enum DataFormat { decAscii, hexAscii, bin }

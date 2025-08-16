@@ -583,12 +583,6 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _editRfidSettings(BuildContext context) async {
-    print(
-      (_settingsManager.getValue<String>("rfid.serial.eol") ??
-              _settingsManager.getDefault<String>("rfid.serial.eol")!) ==
-          "\\n",
-    );
-    print(["NONE", "\\n", "\\r", "\\r\\n", "\\x02"]);
     return showDialog(
       context: context,
       builder: (context) {
