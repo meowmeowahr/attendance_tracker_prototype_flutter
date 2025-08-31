@@ -480,12 +480,15 @@ class _HomePageState extends State<HomePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+
+    final theme = Theme.of(context);
+
     return SafeArea(
       child: Scaffold(
         body: Column(
           children: [
             Container(
-              color: Theme.of(context).colorScheme.surfaceContainerHigh,
+              color: theme.colorScheme.surfaceContainerHigh,
               height: 60,
               child: Row(
                 children: [
@@ -505,12 +508,13 @@ class _HomePageState extends State<HomePage>
                           children: [
                             Text(
                               dateString,
-                              style: Theme.of(context).textTheme.titleMedium,
+                              style: theme.textTheme.titleMedium,
                             ),
                             Text(
                               timeString,
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(fontFamily: 'monospace'),
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontFamily: 'monospace',
+                              ),
                             ),
                           ],
                         );

@@ -395,6 +395,8 @@ class _VirtualKeyboardState extends State<VirtualKeyboard>
     }
 
     Widget child;
+    final theme = Theme.of(context);
+
     if (keyData.style == "Primary") {
       child = FilledButton(
         onPressed: () => _onKeyPressed(keyData),
@@ -405,9 +407,9 @@ class _VirtualKeyboardState extends State<VirtualKeyboard>
             borderRadius: BorderRadius.circular(4.0),
           ),
           splashFactory: NoSplash.splashFactory,
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          textStyle: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+          backgroundColor: theme.colorScheme.primary,
+          foregroundColor: theme.colorScheme.onPrimary,
+          textStyle: TextStyle(color: theme.colorScheme.onPrimary),
         ),
         child: keyContent,
       );
@@ -421,10 +423,8 @@ class _VirtualKeyboardState extends State<VirtualKeyboard>
             borderRadius: BorderRadius.circular(4.0),
           ),
           splashFactory: NoSplash.splashFactory,
-          backgroundColor: Theme.of(context).colorScheme.secondary,
-          textStyle: TextStyle(
-            color: Theme.of(context).colorScheme.onSecondary,
-          ),
+          backgroundColor: theme.colorScheme.secondary,
+          textStyle: TextStyle(color: theme.colorScheme.onSecondary),
         ),
         child: keyContent,
       );
@@ -438,9 +438,9 @@ class _VirtualKeyboardState extends State<VirtualKeyboard>
             borderRadius: BorderRadius.circular(4.0),
           ),
           splashFactory: NoSplash.splashFactory,
-          backgroundColor: Theme.of(context).colorScheme.tertiary,
-          foregroundColor: Theme.of(context).colorScheme.onTertiary,
-          textStyle: TextStyle(color: Theme.of(context).colorScheme.onTertiary),
+          backgroundColor: theme.colorScheme.tertiary,
+          foregroundColor: theme.colorScheme.onTertiary,
+          textStyle: TextStyle(color: theme.colorScheme.onTertiary),
         ),
         child: keyContent,
       );

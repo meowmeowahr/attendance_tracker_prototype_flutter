@@ -5,13 +5,11 @@ class RfidTapCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: Theme.of(context).colorScheme.outline,
-          width: 1,
-        ),
+        side: BorderSide(color: theme.colorScheme.outline, width: 1),
         borderRadius: BorderRadius.circular(8.0),
       ),
       child: Padding(
@@ -21,7 +19,7 @@ class RfidTapCard extends StatelessWidget {
             Icon(
               Icons.contactless_outlined,
               size: 64,
-              color: Theme.of(context).colorScheme.primary,
+              color: theme.colorScheme.primary,
             ),
             Spacer(),
             Column(
@@ -29,11 +27,11 @@ class RfidTapCard extends StatelessWidget {
               children: [
                 Text(
                   "Tap your badge to clock in/out",
-                  style: Theme.of(context).textTheme.bodyLarge,
+                  style: theme.textTheme.bodyLarge,
                 ),
                 Text(
                   "or manually select your name below",
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: theme.textTheme.bodySmall,
                 ),
               ],
             ),
