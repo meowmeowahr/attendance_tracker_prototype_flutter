@@ -970,16 +970,16 @@ class _SettingsPageState extends State<SettingsPage> {
       final result = await FilePicker.platform.saveFile(
         dialogTitle: 'Save Settings',
         fileName: 'settings.json',
+        bytes: Uint8List.fromList(json.codeUnits),
       );
       if (result != null) {
-        final file = File(result);
-        await file.writeAsString(json);
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Settings exported successfully')),
         );
       }
     } catch (e) {
+      widget.logger.e("Failed to export settings $e");
       if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
