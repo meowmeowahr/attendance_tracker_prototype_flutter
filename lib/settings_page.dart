@@ -719,36 +719,6 @@ class _SettingsPageState extends State<SettingsPage> {
                               child: DropdownButtonFormField(
                                 decoration: InputDecoration(
                                   border: OutlineInputBorder(),
-                                  label: Text("SOI Character"),
-                                ),
-                                items: ["NONE", "\\n", "\\r", "\\r\\n", "\\x02"]
-                                    .map(
-                                      (sol) => DropdownMenuItem<String>(
-                                        value: sol,
-                                        child: Text(sol),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (newEOL) {
-                                  _settingsManager.setValue(
-                                    "rfid.serial.sol",
-                                    newEOL,
-                                  );
-                                },
-                                value:
-                                    _settingsManager.getValue<String>(
-                                      "rfid.serial.sol",
-                                    ) ??
-                                    _settingsManager.getDefault<String>(
-                                      "rfid.serial.sol",
-                                    )!,
-                              ),
-                            ),
-                            SizedBox(width: 8.0),
-                            Expanded(
-                              child: DropdownButtonFormField(
-                                decoration: InputDecoration(
-                                  border: OutlineInputBorder(),
                                   label: Text("EOI Character"),
                                 ),
                                 items: ["\\n", "\\r", "\\r\\n", "\\x03"]

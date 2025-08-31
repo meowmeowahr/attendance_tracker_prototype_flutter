@@ -288,10 +288,6 @@ class _HomePageState extends State<HomePage>
           widget.settingsManager.getValue<String>("rfid.serial.eol") ??
               widget.settingsManager.getDefault<String>("rfid.serial.eol")!,
         ),
-        solString: unescapeFormatCharacters(
-          widget.settingsManager.getValue<String>("rfid.serial.sol") ??
-              widget.settingsManager.getDefault<String>("rfid.serial.sol")!,
-        ),
         dataFormat: DataFormat.values.byName(
           widget.settingsManager.getValue<String>("rfid.serial.format") ??
               widget.settingsManager.getDefault<String>("rfid.serial.format")!,
@@ -372,24 +368,30 @@ class _HomePageState extends State<HomePage>
   }
 
   void _displayErrorPopup(String error) {
+    final rootContext = context; // capture once from the widget
+
     showDialog(
       barrierColor: Colors.red.withAlpha(40),
       barrierDismissible: false,
-      context: context,
-      builder: (context) {
-        Timer(Duration(seconds: 1), () {
-          Navigator.of(context).pop();
+      context: rootContext,
+      builder: (dialogContext) {
+        // Schedule dismissal using the rootContext, not dialogContext
+        Timer(const Duration(seconds: 1), () {
+          if (mounted &&
+              Navigator.of(rootContext, rootNavigator: true).canPop()) {
+            Navigator.of(rootContext, rootNavigator: true).pop();
+          }
         });
+
         return AlertDialog(
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Lottie.asset('assets/animations/fail.json', reverse: true),
-              Text(error, style: Theme.of(context).textTheme.titleLarge),
+              Text(error, style: Theme.of(rootContext).textTheme.titleLarge),
             ],
           ),
           actionsPadding: EdgeInsets.zero,
-          actions: [],
         );
       },
     );
@@ -589,14 +591,6 @@ class _HomePageState extends State<HomePage>
                                       ) ??
                                       widget.settingsManager.getDefault<String>(
                                         "rfid.serial.eol",
-                                      )!,
-                                ),
-                                solString: unescapeFormatCharacters(
-                                  widget.settingsManager.getValue<String>(
-                                        "rfid.serial.sol",
-                                      ) ??
-                                      widget.settingsManager.getDefault<String>(
-                                        "rfid.serial.sol",
                                       )!,
                                 ),
                                 dataFormat: DataFormat.values.byName(

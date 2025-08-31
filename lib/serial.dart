@@ -57,7 +57,6 @@ class SerialRfidStream {
   late StreamController<int?> _controller;
   List<int> _inWaiting = [];
   String? eolString;
-  String? solString;
 
   String? _currentPortPath;
   int _baudRate = 9600;
@@ -104,13 +103,11 @@ class SerialRfidStream {
     int? readTimeoutMs,
     int? writeTimeoutMs,
     String? eolString,
-    String? solString,
     ChecksumStyle? checksumStyle,
     ChecksumPosition? checksumPosition,
     DataFormat? dataFormat,
   }) async {
     this.eolString = eolString;
-    this.solString = solString;
     if (checksumStyle != null) this.checksumStyle = checksumStyle;
     if (checksumPosition != null) this.checksumPosition = checksumPosition;
     if (dataFormat != null) this.dataFormat = dataFormat;
@@ -334,50 +331,29 @@ class SerialRfidStream {
   }
 
   void _processIncomingData() {
-    // Convert solString and eolString to byte sequences
-    final solBytes = solString == 'NONE' || solString == null
+    // Convert eolString to byte sequence (UTF-8 safe)
+    final eolBytes = (eolString == null || eolString == 'NONE')
         ? null
-        : Uint8List.fromList(solString!.codeUnits);
-    final eolBytes = Uint8List.fromList(eolString!.codeUnits);
+        : Uint8List.fromList(eolString!.codeUnits);
+
+    if (eolBytes == null) {
+      // You always need an end-of-line marker
+      return;
+    }
 
     while (_inWaiting.isNotEmpty) {
-      List<int> message;
-      int endIndex;
+      // Look for EOL marker
+      int endIndex = _indexOfSequence(_inWaiting, eolBytes);
+      if (endIndex == -1) break; // Incomplete message
 
-      if (solBytes == null) {
-        // Case: solString = 'NONE'
-        endIndex = _indexOfSequence(_inWaiting, eolBytes);
-        if (endIndex == -1) break; // Incomplete message
-        message = _inWaiting.sublist(0, endIndex);
-        _inWaiting = _inWaiting.sublist(endIndex + eolBytes.length);
-      } else if (solString == eolString) {
-        // Case: solString == eolString
-        final firstIndex = _indexOfSequence(_inWaiting, solBytes);
-        if (firstIndex == -1) {
-          _inWaiting = []; // Clear if no sol found
-          break;
-        }
-        final searchStart = firstIndex + solBytes.length;
-        if (searchStart >= _inWaiting.length) break; // Incomplete
-        final secondIndex = _indexOfSequence(_inWaiting, solBytes, searchStart);
-        if (secondIndex == -1) break; // Incomplete
-        message = _inWaiting.sublist(firstIndex + solBytes.length, secondIndex);
-        _inWaiting = _inWaiting.sublist(secondIndex);
-      } else {
-        // Case: Normal solString and eolString
-        final solIndex = _indexOfSequence(_inWaiting, solBytes);
-        if (solIndex == -1) {
-          _inWaiting = []; // Clear if no sol found
-          break;
-        }
-        final messageData = _inWaiting.sublist(solIndex);
-        endIndex = _indexOfSequence(messageData, eolBytes);
-        if (endIndex == -1) break; // Incomplete
-        message = messageData.sublist(solBytes.length, endIndex);
-        _inWaiting = messageData.sublist(endIndex + eolBytes.length);
-      }
+      // Extract message (everything before EOL)
+      List<int> message = _inWaiting.sublist(0, endIndex);
+
+      // Remove processed data from buffer
+      _inWaiting = _inWaiting.sublist(endIndex + eolBytes.length);
 
       if (message.isNotEmpty) {
+        print('Received message: $message');
         int? userId = normalizeTagId(
           message,
           checksumStyle,
@@ -387,9 +363,9 @@ class SerialRfidStream {
         _controller.add(userId);
       }
 
-      // Prevent buffer overflow (max 1024 bytes)
+      // Prevent runaway buffer
       if (_inWaiting.length > 1024) {
-        _inWaiting = [];
+        _inWaiting.clear();
       }
     }
   }

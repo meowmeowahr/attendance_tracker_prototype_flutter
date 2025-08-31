@@ -61,7 +61,6 @@ class SettingsManager {
       'rfid.serial.baud': 9600,
       'rfid.serial.timeout': 0.5,
       'rfid.serial.eol': '\\n',
-      'rfid.serial.sol': 'NONE',
       'rfid.serial.format': 'decAscii',
       'rfid.serial.checksum': 'none',
       'rfid.serial.checksum.pos': 'end',
