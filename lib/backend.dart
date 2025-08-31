@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:googleapis/sheets/v4.dart';
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
+import 'package:logger/logger.dart';
 
 enum AttendanceStatus { present, out }
 
@@ -106,8 +107,9 @@ class AttendanceTrackerBackend {
   // google connected flag
   // this must NOT become false on rate limit, null = not initialized
   ValueNotifier<bool?> googleConnected = ValueNotifier(null);
+  final Logger logger;
 
-  AttendanceTrackerBackend() {
+  AttendanceTrackerBackend(this.logger) {
     googleConnected.addListener(() {
       if (googleConnected.value != true) {
         _onGoogleDisconnected();
@@ -177,10 +179,10 @@ class AttendanceTrackerBackend {
       }
 
       googleConnected.value = _spreadsheet != null;
-      print("Loaded spreadsheet: ${_sheetId!}");
+      logger.i("Loaded spreadsheet: ${_sheetId!}");
     } catch (e) {
       googleConnected.value = false;
-      print('Error initializing SheetsClient: $e');
+      logger.e('Error initializing SheetsClient: $e');
     }
 
     if (_memberFetchTimer != null) {
@@ -282,10 +284,10 @@ class AttendanceTrackerBackend {
       }
 
       googleConnected.value = _spreadsheet != null;
-      print("Loaded spreadsheet: ${_sheetId!}");
+      logger.i("Loaded spreadsheet: ${_sheetId!}");
     } catch (e) {
       googleConnected.value = false;
-      print('Error initializing SheetsClient: $e');
+      logger.e('Error initializing SheetsClient: $e');
       if (_googleAttemptBringupTimer == null) {
         _googleAttemptBringupTimer = RestartableTimer(Duration(seconds: 1), () {
           _onGoogleDisconnected();
@@ -308,11 +310,11 @@ class AttendanceTrackerBackend {
         AttendanceTrackerBackend.memberSheetContentsRange,
       );
     } on SocketException catch (e) {
-      print("Google is down!!! $e");
+      logger.w("Google is down!!! $e");
       googleConnected.value = false;
       return;
     } on TimeoutException catch (e) {
-      print("Google is down with timeout!!! $e");
+      logger.w("Google is down with timeout!!! $e");
       googleConnected.value = false;
       return;
     }
@@ -365,11 +367,11 @@ class AttendanceTrackerBackend {
         AttendanceTrackerBackend.memberSheetIdsRange,
       );
     } on SocketException catch (e) {
-      print("Google is down!!! $e");
+      logger.w("Google is down!!! $e");
       googleConnected.value = false;
       return;
     } on TimeoutException catch (e) {
-      print("Google is down with timeout!!! $e");
+      logger.w("Google is down with timeout!!! $e");
       googleConnected.value = false;
       return;
     }
@@ -384,7 +386,7 @@ class AttendanceTrackerBackend {
 
     for (TimeClockEvent event in timeClockEvents) {
       if (!memberIds.contains(event.memberId)) {
-        print(
+        logger.w(
           "Member ID ${event.memberId} not found in table, maybe the member list was remotely updated?",
         );
         return;
@@ -456,11 +458,11 @@ class AttendanceTrackerBackend {
         _sheetId ?? "",
       );
     } on SocketException catch (e) {
-      print("Google is down!!! $e");
+      logger.w("Google is down!!! $e");
       googleConnected.value = false;
       return;
     } on TimeoutException catch (e) {
-      print("Google is down with timeout!!! $e");
+      logger.w("Google is down with timeout!!! $e");
       googleConnected.value = false;
       return;
     }
@@ -486,11 +488,11 @@ class AttendanceTrackerBackend {
         AttendanceTrackerBackend.logSheetHeaderRange,
       );
     } on SocketException catch (e) {
-      print("Google is down!!! $e");
+      logger.w("Google is down!!! $e");
       googleConnected.value = false;
       return;
     } on TimeoutException catch (e) {
-      print("Google is down with timeout!!! $e");
+      logger.w("Google is down with timeout!!! $e");
       googleConnected.value = false;
       return;
     }
@@ -526,11 +528,11 @@ class AttendanceTrackerBackend {
           valueInputOption: "USER_ENTERED",
         );
       } on SocketException catch (e) {
-        print("Google is down!!! $e");
+        logger.w("Google is down!!! $e");
         googleConnected.value = false;
         return;
       } on TimeoutException catch (e) {
-        print("Google is down with timeout!!! $e");
+        logger.w("Google is down with timeout!!! $e");
         googleConnected.value = false;
         return;
       }
@@ -541,7 +543,7 @@ class AttendanceTrackerBackend {
       for (int i = 0; i < (header?.values?[0].length ?? 0); i += 4) {
         final intId = int.tryParse(header?.values?[0][i].toString() ?? "");
         if (intId == null) {
-          print(
+          logger.e(
             "Something is wrong with the log sheet header!!! Check formatting remotely. Log update cancelled.",
           );
           return;
@@ -624,17 +626,16 @@ class AttendanceTrackerBackend {
           _sheetId ?? "",
         );
       } on SocketException catch (e) {
-        print("Google is down!!! $e");
+        logger.w("Google is down!!! $e");
         googleConnected.value = false;
         return;
       } on TimeoutException catch (e) {
-        print("Google is down with timeout!!! $e");
+        logger.w("Google is down with timeout!!! $e");
         googleConnected.value = false;
         return;
       }
 
       // update logs
-      print(_logQueue);
       List<ValueRange> logUpdates = [];
       List<MemberLogEntry> toRemove = [];
 
@@ -651,7 +652,7 @@ class AttendanceTrackerBackend {
                 .indexOf(entry.memberId.toString()) ??
             -2 + 1;
         if (startCol == -1) {
-          print(
+          logger.e(
             "User ID ${entry.memberId} not found in logs!!! Cancelling update",
           );
           return;
@@ -662,7 +663,7 @@ class AttendanceTrackerBackend {
                 -2) +
             1;
         if (safeNextLogRow == -1) {
-          print(
+          logger.e(
             "Something is wrong with the log count for user ${entry.memberId}!!! Check the log header for errors. Cancelling update.",
           );
           return;
@@ -720,11 +721,11 @@ class AttendanceTrackerBackend {
           _logQueue.remove(entry);
         }
       } on SocketException catch (e) {
-        print("Google is down!!! $e");
+        logger.w("Google is down!!! $e");
         googleConnected.value = false;
         return;
       } on TimeoutException catch (e) {
-        print("Google is down with timeout!!! $e");
+        logger.w("Google is down with timeout!!! $e");
         googleConnected.value = false;
         return;
       }

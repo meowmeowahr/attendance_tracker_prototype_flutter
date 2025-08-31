@@ -16,6 +16,7 @@ import 'package:attendance_tracker/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
 import 'package:lottie/lottie.dart';
 
 void main() async {
@@ -29,14 +30,34 @@ void main() async {
     settings.getValue<String>('app.theme.accent') ?? "blue",
   );
 
-  runApp(MyApp(settings, controller));
+  var logger = Logger(
+    filter: null, // Use the default LogFilter (-> only log in debug mode)
+    printer: PrettyPrinter(
+      methodCount: 0, // Number of method calls to be displayed
+      errorMethodCount: 8, // Number of method calls if stacktrace is provided
+      lineLength: 120, // Width of the output
+      colors: true, // Colorful log messages
+      printEmojis: true, // Print an emoji for each log message
+      // Should each log print contain a timestamp
+      dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
+    ), // Use the PrettyPrinter to format and print log
+    output: null, // Use the default LogOutput (-> send everything to console)
+  );
+
+  runApp(MyApp(settings, controller, logger));
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp(this.settingsManager, this.themeController, {super.key});
+  const MyApp(
+    this.settingsManager,
+    this.themeController,
+    this.logger, {
+    super.key,
+  });
 
   final SettingsManager settingsManager;
   final ThemeController themeController;
+  final Logger logger;
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -92,7 +113,11 @@ class _MyAppState extends State<MyApp> {
               themeMode: widget.themeController.themeMode.value,
               darkTheme: darkTheme,
               theme: lightTheme,
-              home: HomePage(widget.themeController, widget.settingsManager),
+              home: HomePage(
+                widget.themeController,
+                widget.settingsManager,
+                widget.logger,
+              ),
             );
           },
         );
@@ -102,10 +127,16 @@ class _MyAppState extends State<MyApp> {
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage(this.themeController, this.settingsManager, {super.key});
+  const HomePage(
+    this.themeController,
+    this.settingsManager,
+    this.logger, {
+    super.key,
+  });
 
   final ThemeController themeController;
   final SettingsManager settingsManager;
+  final Logger logger;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -144,13 +175,15 @@ class _HomePageState extends State<HomePage>
   late RestartableTimer _rfidHidTimeoutTimer;
 
   // rfid serial
-  final SerialRfidStream _rfidSerialStreamer = SerialRfidStream();
+  late final SerialRfidStream _rfidSerialStreamer = SerialRfidStream(
+    widget.logger,
+  );
 
   @override
   void initState() {
     super.initState();
     // backend
-    _backend = AttendanceTrackerBackend();
+    _backend = AttendanceTrackerBackend(widget.logger);
     _backend.initialize(
       widget.settingsManager.getValue<String>('google.sheet_id') ?? '',
       widget.settingsManager.getValue<String>('google.oauth_credentials') ??
@@ -175,7 +208,7 @@ class _HomePageState extends State<HomePage>
 
     // home screen state
     _homeScreenState = ValueNotifier(AppState.initial);
-    Timer.periodic(const Duration(seconds: 10), (Timer timer) {
+    Timer.periodic(const Duration(seconds: 5), (Timer timer) {
       _homeScreenState.value = _getStatus();
     });
 
@@ -304,7 +337,7 @@ class _HomePageState extends State<HomePage>
       );
       final connOk = _rfidSerialStreamer.connect(); // attempt to connect
       _rfidSerialStreamer.stream.listen((data) => _processRfid(data));
-      print("Connection to startup serial port: $connOk");
+      ("Connection to startup serial port: $connOk");
     }
   }
 
@@ -345,12 +378,12 @@ class _HomePageState extends State<HomePage>
 
   void _processRfid(int? code) {
     if (!rfidScanInActive) {
-      print("RFID processing paused. Ignoring tag");
+      widget.logger.i("RFID processing paused. Tag = $code");
       return;
     }
-    print("Process RFID Tag: $code");
+    widget.logger.i("Process RFID Tag: $code");
     if (code == null) {
-      print("Invalid RFID tag, please try again");
+      widget.logger.w("Invalid RFID tag, please try again");
       _displayErrorPopup("Badge Read Error");
       return;
     }
@@ -534,8 +567,10 @@ class _HomePageState extends State<HomePage>
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  SettingsPage(widget.themeController),
+                              builder: (context) => SettingsPage(
+                                widget.themeController,
+                                widget.logger,
+                              ),
                             ),
                           ).then((_) {
                             // navigate back
@@ -620,7 +655,7 @@ class _HomePageState extends State<HomePage>
                               );
                               final connOk = _rfidSerialStreamer
                                   .connect(); // attempt to connect
-                              print(
+                              widget.logger.i(
                                 "Connection to post-setup serial port: $connOk",
                               );
                             }

@@ -6,9 +6,10 @@ import 'package:attendance_tracker/state.dart';
 import 'package:attendance_tracker/util.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart'
     if (dart.library.io) 'package:flutter_libserialport/flutter_libserialport.dart';
+import 'package:logger/logger.dart';
 import 'package:usb_serial/usb_serial.dart';
 
-Future<List<String>> get listPortPaths async {
+Future<List<String>> listPortPaths(Logger logger) async {
   // Linux: /dev/ttyS*, /dev/ttyAMA*, /dev/ttyACM*
   if (Platform.isLinux) {
     try {
@@ -22,7 +23,7 @@ Future<List<String>> get listPortPaths async {
           .toList();
       return ports..sort();
     } catch (e) {
-      print('Error listing serial ports on Linux: $e');
+      logger.e('Error listing serial ports on Linux: $e');
       return [];
     }
   }
@@ -31,7 +32,7 @@ Future<List<String>> get listPortPaths async {
     try {
       return SerialPort.availablePorts;
     } catch (e) {
-      print('Error accessing serial ports: $e');
+      logger.e('Error accessing serial ports: $e');
       return [];
     }
   }
@@ -39,10 +40,9 @@ Future<List<String>> get listPortPaths async {
   else if (Platform.isAndroid) {
     try {
       List<UsbDevice> devices = await UsbSerial.listDevices();
-      print(devices.map((device) => device.deviceName).toList());
       return devices.map((device) => device.deviceName).toList();
     } catch (e) {
-      print('Error listing USB serial devices on Android: $e');
+      logger.e('Error listing USB serial devices on Android: $e');
       return [];
     }
   }
@@ -87,7 +87,9 @@ class SerialRfidStream {
   dynamic portError;
   SerialPortState get state => SerialPortState(isConnected, portError);
 
-  SerialRfidStream() {
+  final Logger logger;
+
+  SerialRfidStream(this.logger) {
     _controller = StreamController<int?>.broadcast(
       onCancel: () {
         _stopReading();
@@ -143,7 +145,7 @@ class SerialRfidStream {
 
       return true;
     } catch (e) {
-      print('Error configuring serial port: $e');
+      logger.e('Error configuring serial port: $e');
       return false;
     }
   }
@@ -152,7 +154,7 @@ class SerialRfidStream {
   Future<bool> connect() async {
     // Make connect async for Android
     if (_currentPortPath == null) {
-      print('No port path configured');
+      logger.e('No port path configured');
       return false;
     }
 
@@ -175,20 +177,20 @@ class SerialRfidStream {
         }
 
         if (targetDevice == null) {
-          print('Android: USB device not found for path $_currentPortPath');
+          logger.e('Android: USB device not found for path $_currentPortPath');
           return false;
         }
 
         UsbPort? port = await targetDevice.create();
         if (port == null) {
-          print("Android: Failed to create UsbPort from device.");
+          logger.e("Android: Failed to create UsbPort from device.");
           return false;
         }
 
         bool openResult = await port.open();
         _portOpened = openResult;
         if (!openResult) {
-          print("Android: Failed to open UsbPort.");
+          logger.e("Android: Failed to open UsbPort.");
           return false;
         }
 
@@ -206,7 +208,7 @@ class SerialRfidStream {
         _port = port;
         _startReading(); // Start reading from the UsbPort's inputStream
 
-        print('Android: Connected to $_currentPortPath at $_baudRate baud');
+        logger.i('Android: Connected to $_currentPortPath at $_baudRate baud');
         return true;
       } else {
         // Create new port instance for non-Android platforms
@@ -222,7 +224,7 @@ class SerialRfidStream {
 
         if (!(_port as SerialPort).openRead()) {
           final error = SerialPort.lastError;
-          print('Failed to open port: ${error?.message}');
+          logger.e('Failed to open port: ${error?.message}');
           (_port as SerialPort).dispose();
           _port = null;
           return false;
@@ -233,11 +235,11 @@ class SerialRfidStream {
         // Start reading
         _startReading();
 
-        print('Connected to $_currentPortPath at $_baudRate baud');
+        logger.i('Connected to $_currentPortPath at $_baudRate baud');
         return true;
       }
     } catch (e) {
-      print('Error connecting to serial port: $e');
+      logger.e('Error connecting to serial port: $e');
       if (Platform.isAndroid && _port is UsbPort) {
         (_port as UsbPort).close();
       } else if (_port is SerialPort) {
@@ -263,9 +265,9 @@ class SerialRfidStream {
       }
       _port = null;
 
-      print('Disconnected from serial port');
+      logger.i('Disconnected from serial port');
     } catch (e) {
-      print('Error disconnecting from serial port: $e');
+      logger.e('Error disconnecting from serial port: $e');
     }
   }
 
@@ -295,7 +297,6 @@ class SerialRfidStream {
     if (Platform.isAndroid) {
       _usbPortReader?.close(); // Close any previous Android stream
       if (_port is UsbPort) {
-        print("here");
         _usbPortReader = _port as UsbPort;
         _usbPortReader?.inputStream?.listen(
           (Uint8List data) {
@@ -307,7 +308,7 @@ class SerialRfidStream {
             disconnect();
           },
           onDone: () {
-            print("Android UsbPort input stream closed.");
+            logger.d("Android UsbPort input stream closed.");
             disconnect();
           },
         );
@@ -353,12 +354,13 @@ class SerialRfidStream {
       _inWaiting = _inWaiting.sublist(endIndex + eolBytes.length);
 
       if (message.isNotEmpty) {
-        print('Received message: $message');
+        logger.d('Received message: $message');
         int? userId = normalizeTagId(
           message,
           checksumStyle,
           checksumPosition,
           dataFormat,
+          logger,
         );
         _controller.add(userId);
       }
@@ -381,7 +383,7 @@ class SerialRfidStream {
         _reader = null;
       }
     } catch (e) {
-      print('Error stopping serial port reader: $e');
+      logger.e('Error stopping serial port reader: $e');
     }
   }
 

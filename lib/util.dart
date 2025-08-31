@@ -1,3 +1,5 @@
+import 'package:logger/logger.dart';
+
 String unescapeFormatCharacters(String input) {
   // Map of format characters to their escaped versions
   final escapeMap = {
@@ -47,6 +49,7 @@ int? normalizeTagId(
   ChecksumStyle checksumStyle,
   ChecksumPosition checksumPosition,
   DataFormat dataFormat,
+  Logger logger,
 ) {
   try {
     List<int> tagId;
@@ -77,7 +80,7 @@ int? normalizeTagId(
         }
         int calcChecksum = pairs.reduce((a, b) => a ^ b);
         if (calcChecksum != int.parse(checksumStr, radix: 16)) {
-          print('Checksum validation failed: $message');
+          logger.w('Checksum validation failed: $message');
           return null;
         }
         break;
@@ -92,7 +95,7 @@ int? normalizeTagId(
         }
         int calcChecksum = tagId.reduce((a, b) => a ^ b);
         if (calcChecksum != checksumByte) {
-          print('Checksum validation failed: $message');
+          logger.w('Checksum validation failed: $message');
           return null;
         }
         break;
@@ -110,7 +113,7 @@ int? normalizeTagId(
         return int.parse(tagStr, radix: 16);
     }
   } catch (e) {
-    print('Error normalizing tag ID: $e');
+    logger.e('Error normalizing tag ID: $e');
     return null;
   }
 }

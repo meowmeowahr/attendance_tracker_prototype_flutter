@@ -9,6 +9,7 @@ import 'package:attendance_tracker/widgets.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:logger/logger.dart';
 
 class PinKeypad extends StatelessWidget {
   final Function(String) onKeyPressed;
@@ -97,9 +98,10 @@ class PinKeypad extends StatelessWidget {
 }
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage(this.themeController, {super.key});
+  const SettingsPage(this.themeController, this.logger, {super.key});
 
   final ThemeController themeController;
+  final Logger logger;
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -629,7 +631,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       children: [
                         SizedBox(height: 16.0),
                         FutureBuilder<List<String>>(
-                          future: listPortPaths,
+                          future: listPortPaths(widget.logger),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                 ConnectionState.waiting) {
