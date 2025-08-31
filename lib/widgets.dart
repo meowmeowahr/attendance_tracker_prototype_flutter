@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class RfidTapCard extends StatelessWidget {
   const RfidTapCard({super.key});

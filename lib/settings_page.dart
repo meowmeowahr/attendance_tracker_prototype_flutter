@@ -667,7 +667,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                       ),
                                     )
                                     .toList(),
-                                value: currentSelectedPort,
+                                initialValue: currentSelectedPort,
                                 onChanged: (newPath) {
                                   setState(() {
                                     _settingsManager.setValue(
@@ -735,7 +735,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                     newEOL,
                                   );
                                 },
-                                value:
+                                initialValue:
                                     _settingsManager.getValue<String>(
                                       "rfid.serial.eol",
                                     ) ??
@@ -769,7 +769,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                     newCsum,
                                   );
                                 },
-                                value:
+                                initialValue:
                                     _settingsManager.getValue<String>(
                                       "rfid.serial.checksum",
                                     ) ??
@@ -799,7 +799,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                     newCsum,
                                   );
                                 },
-                                value:
+                                initialValue:
                                     _settingsManager.getValue<String>(
                                       "rfid.serial.checksum.pos",
                                     ) ??
@@ -828,7 +828,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               newCsum,
                             );
                           },
-                          value:
+                          initialValue:
                               _settingsManager.getValue<String>(
                                 "rfid.serial.format",
                               ) ??
@@ -911,7 +911,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           onChanged: (newEOL) {
                             _settingsManager.setValue("rfid.hid.eol", newEOL);
                           },
-                          value:
+                          initialValue:
                               _settingsManager.getValue<String>(
                                 "rfid.hid.eol",
                               ) ??
@@ -937,7 +937,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               newCsum,
                             );
                           },
-                          value:
+                          initialValue:
                               _settingsManager.getValue<String>(
                                 "rfid.hid.format",
                               ) ??

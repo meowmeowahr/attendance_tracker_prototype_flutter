@@ -82,7 +82,7 @@ int? normalizeTagId(
         }
         break;
       case ChecksumStyle.xor1byte:
-        if (message.length < 1) return null;
+        if (message.isEmpty) return null;
         if (checksumPosition == ChecksumPosition.end) {
           tagId = message.sublist(0, message.length - 1);
           checksumByte = message.last;

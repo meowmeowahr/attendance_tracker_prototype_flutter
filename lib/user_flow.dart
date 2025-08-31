@@ -180,7 +180,7 @@ class _UserFlowState extends State<UserFlow> {
                       Padding(
                         padding: const EdgeInsets.only(left: 24.0, right: 24.0),
                         child: DropdownButtonFormField<String>(
-                          value: _selectedLocation,
+                          initialValue: _selectedLocation,
 
                           onChanged: (value) {
                             setState(() {
