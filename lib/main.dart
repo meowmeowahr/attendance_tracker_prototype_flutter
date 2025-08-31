@@ -256,9 +256,6 @@ class _HomePageState extends State<HomePage>
                 ),
               );
               break;
-            case DataFormat.bin:
-              // unsupported
-              _displayErrorPopup("Binary RFID format is not supported");
           }
           _rfidHidInWaiting.clear(); // clear the queue
         }
@@ -340,9 +337,6 @@ class _HomePageState extends State<HomePage>
             ),
           );
           break;
-        case DataFormat.bin:
-          // unsupported
-          _displayErrorPopup("Binary RFID format is not supported");
       }
 
       _rfidHidInWaiting.clear(); // clear the queue

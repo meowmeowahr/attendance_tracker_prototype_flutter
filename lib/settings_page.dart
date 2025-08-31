@@ -1125,7 +1125,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 ListTile(
                   title: const Text("Export Settings"),
-                  subtitle: const Text("Export settings as JSON file"),
+                  subtitle: const Text(
+                    "Your PIN will be saved as PLAIN TEXT",
+                    style: TextStyle(color: Colors.red),
+                  ),
                   leading: const Icon(Icons.download),
                   trailing: IconButton(
                     onPressed: () => _exportSettings(context),

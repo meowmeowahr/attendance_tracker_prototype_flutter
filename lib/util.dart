@@ -38,7 +38,7 @@ String columnToReference(int col) {
 
 enum ChecksumStyle { none, xor2hex, xor1byte }
 
-enum DataFormat { decAscii, hexAscii, bin }
+enum DataFormat { decAscii, hexAscii }
 
 enum ChecksumPosition { start, end }
 
@@ -108,11 +108,6 @@ int? normalizeTagId(
         String tagStr = String.fromCharCodes(tagId);
         if (!RegExp(r'^[0-9A-Fa-f]+$').hasMatch(tagStr)) return null;
         return int.parse(tagStr, radix: 16);
-      case DataFormat.bin:
-        if (tagId.every((b) => b <= 0xFF)) {
-          return tagId.fold(0, (prev, byte) => (prev ?? 0 << 8) + byte);
-        }
-        return null;
     }
   } catch (e) {
     print('Error normalizing tag ID: $e');
