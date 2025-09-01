@@ -146,70 +146,97 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildPinEntry(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings Lock')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Column(
+      body: OrientationBuilder(
+        builder: (context, orientation) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Flex(
+              direction: orientation == Orientation.portrait
+                  ? Axis.vertical
+                  : Axis.horizontal,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  'Enter PIN',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                const SizedBox(height: 16),
-                Row(
+                Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    6,
-                    (index) => Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: index < _enteredPin.length
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHigh,
+                  children: [
+                    Text(
+                      'Enter PIN',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        6,
+                        (index) => Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: index < _enteredPin.length
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHigh,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
+                ),
+                SizedBox(
+                  width: orientation == Orientation.portrait ? 0 : 32,
+                  height: orientation == Orientation.portrait ? 32 : 0,
+                ),
+                PinKeypad(
+                  onKeyPressed: (key) async {
+                    if (_enteredPin.length < 6) {
+                      setState(() {
+                        _enteredPin += key;
+                      });
+                      if (_enteredPin.length == 6) {
+                        if (await _verifyPin(_enteredPin)) {
+                          setState(() {
+                            _isPinVerified = true;
+                          });
+                        } else {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Invalid PIN'),
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.error,
+                            ),
+                          );
+                          setState(() {
+                            _enteredPin = '';
+                          });
+                        }
+                      }
+                    }
+                  },
+                  onClear: () {
+                    setState(() {
+                      _enteredPin = '';
+                    });
+                  },
+                  onBackspace: () {
+                    if (_enteredPin.isNotEmpty) {
+                      setState(() {
+                        _enteredPin = _enteredPin.substring(
+                          0,
+                          _enteredPin.length - 1,
+                        );
+                      });
+                    }
+                  },
                 ),
               ],
             ),
-            const SizedBox(width: 32),
-            PinKeypad(
-              onKeyPressed: (key) {
-                if (_enteredPin.length < 6) {
-                  setState(() {
-                    _enteredPin += key;
-                  });
-                  if (_enteredPin.length == 6) {
-                    _verifyAndProceed();
-                  }
-                }
-              },
-              onClear: () {
-                setState(() {
-                  _enteredPin = '';
-                });
-              },
-              onBackspace: () {
-                if (_enteredPin.isNotEmpty) {
-                  setState(() {
-                    _enteredPin = _enteredPin.substring(
-                      0,
-                      _enteredPin.length - 1,
-                    );
-                  });
-                }
-              },
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

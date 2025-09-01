@@ -774,6 +774,7 @@ class AttendanceTrackerBackend {
         ...attendance.value,
       ]; // I think this is a bug in ValueNotifier
     }
+    logger.d('Member with ID $memberId marked for clock out');
   }
 
   void clockIn(int memberId, String location) {
@@ -806,5 +807,6 @@ class AttendanceTrackerBackend {
         ...attendance.value,
       ]; // I think this is a bug in ValueNotifier
     }
+    logger.d('Member with ID $memberId marked for clock in');
   }
 }
