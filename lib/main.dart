@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:async/async.dart';
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:attendance_tracker/backend.dart';
 import 'package:attendance_tracker/keyboard.dart';
+import 'package:attendance_tracker/log_printer.dart';
+import 'package:attendance_tracker/log_view.dart';
 import 'package:attendance_tracker/rfid_event.dart';
 import 'package:attendance_tracker/serial.dart';
 import 'package:attendance_tracker/settings.dart';
@@ -32,16 +36,15 @@ void main() async {
   );
 
   var logger = Logger(
-    filter: null, // Use the default LogFilter (-> only log in debug mode)
-    printer: PrettyPrinter(
-      methodCount: 0, // Number of method calls to be displayed
-      errorMethodCount: 8, // Number of method calls if stacktrace is provided
-      lineLength: 120, // Width of the output
-      colors: true, // Colorful log messages
-      printEmojis: true, // Print an emoji for each log message
-      // Should each log print contain a timestamp
-      dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
-    ), // Use the PrettyPrinter to format and print log
+    filter: LevelFilter(
+      Level.values.firstWhere(
+        (level) =>
+            level.value ==
+            (settings.getValue<int>("app.loglevel") ??
+                settings.getDefault<int>("app.loglevel")!),
+      ),
+    ),
+    printer: BoundedMemoryPrinter(),
     output: null, // Use the default LogOutput (-> send everything to console)
   );
 
@@ -348,18 +351,22 @@ class _HomePageState extends State<HomePage>
     }
 
     // kiosk
-    if (widget.settingsManager.getValue<bool>("app.immersive") ??
-        widget.settingsManager.getDefault<bool>("app.immersive")!) {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    } else {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    }
+    if (Platform.isAndroid) {
+      if (widget.settingsManager.getValue<bool>("android.immersive") ??
+          widget.settingsManager.getDefault<bool>("android.immersive")!) {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      } else {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      }
 
-    if (widget.settingsManager.getValue<bool>("app.absorbvolume") ??
-        widget.settingsManager.getDefault<bool>("app.absorbvolume")!) {
-      lockdownPlatform.invokeMethod('setAbsorbVolumeKeys', {'enabled': true});
-    } else {
-      lockdownPlatform.invokeMethod('setAbsorbVolumeKeys', {'enabled': false});
+      if (widget.settingsManager.getValue<bool>("android.absorbvolume") ??
+          widget.settingsManager.getDefault<bool>("android.absorbvolume")!) {
+        lockdownPlatform.invokeMethod('setAbsorbVolumeKeys', {'enabled': true});
+      } else {
+        lockdownPlatform.invokeMethod('setAbsorbVolumeKeys', {
+          'enabled': false,
+        });
+      }
     }
   }
 
@@ -449,26 +456,26 @@ class _HomePageState extends State<HomePage>
 
   void _displaySuccessPopup() async {
     player.play(AssetSource('sounds/success.wav'));
-    showDialog(
-      barrierColor: Colors.green.withAlpha(40),
-      barrierDismissible: false,
-      context: context,
-      builder: (context) {
-        Timer(Duration(seconds: 1), () {
-          Navigator.of(context).pop();
-        });
-        return AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Lottie.asset('assets/animations/success.json', reverse: true),
-            ],
-          ),
-          actionsPadding: EdgeInsets.zero,
-          actions: [],
-        );
-      },
-    );
+    // showDialog(
+    //   barrierColor: Colors.green.withAlpha(40),
+    //   barrierDismissible: false,
+    //   context: context,
+    //   builder: (context) {
+    //     Timer(Duration(seconds: 1), () {
+    //       Navigator.of(context).pop();
+    //     });
+    //     return AlertDialog(
+    //       content: Column(
+    //         mainAxisSize: MainAxisSize.min,
+    //         children: [
+    //           Lottie.asset('assets/animations/success.json', reverse: true),
+    //         ],
+    //       ),
+    //       actionsPadding: EdgeInsets.zero,
+    //       actions: [],
+    //     );
+    //   },
+    // );
   }
 
   @override
@@ -707,6 +714,22 @@ class _HomePageState extends State<HomePage>
                     },
                   ),
                   PopupMenuItem(
+                    value: 'logger',
+                    child: Text('App Logs'),
+                    onTap: () {
+                      rfidScanInActive = false;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              LoggerView(settings: widget.settingsManager),
+                        ),
+                      ).then((_) {
+                        rfidScanInActive = true;
+                      });
+                    },
+                  ),
+                  PopupMenuItem(
                     value: 'about',
                     child: Text('About'),
                     onTap: () {
@@ -888,20 +911,20 @@ class _HomePageState extends State<HomePage>
                                             alignment: Alignment.bottomRight,
                                             children: [
                                               CircleAvatar(
-                                                backgroundColor:
-                                                    HSVColor.fromColor(
-                                                          ColorScheme.fromSeed(
-                                                            seedColor: Color(
-                                                              member.hashCode,
-                                                            ).withAlpha(255),
+                                                // backgroundColor:
+                                                //     HSVColor.fromColor(
+                                                //           ColorScheme.fromSeed(
+                                                //             seedColor: Color(
+                                                //               member.hashCode,
+                                                //             ).withAlpha(255),
 
-                                                            brightness:
-                                                                Brightness.dark,
-                                                          ).primary,
-                                                        )
-                                                        .withAlpha(0.5)
-                                                        .withSaturation(0.6)
-                                                        .toColor(),
+                                                //             brightness:
+                                                //                 Brightness.dark,
+                                                //           ).primary,
+                                                //         )
+                                                //         .withAlpha(0.5)
+                                                //         .withSaturation(0.6)
+                                                //         .toColor(),
                                                 child: Text(
                                                   member.name
                                                       .split(' ')
@@ -1149,6 +1172,23 @@ class _HomePageState extends State<HomePage>
                                         ) ??
                                         '{}',
                                   );
+                                });
+                              },
+                            ),
+                            PopupMenuItem(
+                              value: 'logger',
+                              child: Text('App Logs'),
+                              onTap: () {
+                                rfidScanInActive = false;
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => LoggerView(
+                                      settings: widget.settingsManager,
+                                    ),
+                                  ),
+                                ).then((_) {
+                                  rfidScanInActive = true;
                                 });
                               },
                             ),

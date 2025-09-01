@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:attendance_tracker/image_util.dart';
+import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 
@@ -43,8 +44,9 @@ class SettingsManager {
     _defaultSettings = {
       'google.oauth_credentials': '{}',
       'google.sheet_id': '',
-      'app.immersive': true,
-      'app.absorbvolume': false,
+      'android.immersive': true,
+      'android.absorbvolume': false,
+      'app.loglevel': Level.info.value,
       'app.theme.mode': 'dark',
       'app.theme.accent': 'blue',
       'app.theme.logo': await assetPngToBase64(

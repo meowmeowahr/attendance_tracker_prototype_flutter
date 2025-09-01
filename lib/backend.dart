@@ -45,6 +45,11 @@ class MemberLogEntry {
   final String location;
 
   MemberLogEntry(this.memberId, this.action, this.time, this.location);
+
+  @override
+  String toString() {
+    return 'MemberLogEntry{memberId: $memberId, action: $action, time: $time, location: $location}';
+  }
 }
 
 class TimeClockEvent {
@@ -357,7 +362,7 @@ class AttendanceTrackerBackend {
           ..sort((a, b) => a.time.compareTo(b.time));
 
     // these will be used in the member table for current data
-    Map<int, AttendanceStatus> userStatusUpdates = {};
+    Map<int, List<AttendanceStatus>> userStatusUpdates = {};
     Map<int, String> userLocationUpdates = {};
 
     ValueRange? memberIdTableResponse;
@@ -391,9 +396,20 @@ class AttendanceTrackerBackend {
         );
         return;
       }
-      userStatusUpdates[event.memberId] = event is ClockInEvent
-          ? AttendanceStatus.present
-          : AttendanceStatus.out;
+      userStatusUpdates.update(
+        event.memberId,
+        (list) => list
+          ..add(
+            event is ClockInEvent
+                ? AttendanceStatus.present
+                : AttendanceStatus.out,
+          ),
+        ifAbsent: () => [
+          event is ClockInEvent
+              ? AttendanceStatus.present
+              : AttendanceStatus.out,
+        ],
+      );
       if (event is ClockInEvent) {
         userLocationUpdates[event.memberId] = event.location;
       } else {
@@ -407,7 +423,7 @@ class AttendanceTrackerBackend {
 
       for (final entry in userStatusUpdates.entries) {
         final memberId = entry.key;
-        final status = entry.value;
+        final statusUpdates = entry.value;
 
         final index = memberIds.indexOf(memberId);
 
@@ -420,31 +436,33 @@ class AttendanceTrackerBackend {
             range: range,
             values: [
               [
-                status.toString().split('.').last.capitalize(),
+                statusUpdates.last.toString().split('.').last.capitalize(),
                 userLocationUpdates[memberId] ?? "NULL",
               ],
             ],
           ),
         );
 
-        if (status == AttendanceStatus.out) {
-          _logQueue.add(
-            MemberLogEntry(
-              memberId,
-              MemberLoggerAction.checkOut,
-              DateTime.now(),
-              "NULL",
-            ),
-          );
-        } else if (status == AttendanceStatus.present) {
-          _logQueue.add(
-            MemberLogEntry(
-              memberId,
-              MemberLoggerAction.checkIn,
-              DateTime.now(),
-              userLocationUpdates[memberId] ?? "NULL",
-            ),
-          );
+        for (final statusUpdate in statusUpdates) {
+          if (statusUpdate == AttendanceStatus.out) {
+            _logQueue.add(
+              MemberLogEntry(
+                memberId,
+                MemberLoggerAction.checkOut,
+                DateTime.now(),
+                "NULL",
+              ),
+            );
+          } else if (statusUpdate == AttendanceStatus.present) {
+            _logQueue.add(
+              MemberLogEntry(
+                memberId,
+                MemberLoggerAction.checkIn,
+                DateTime.now(),
+                userLocationUpdates[memberId] ?? "NULL",
+              ),
+            );
+          }
         }
       }
 
@@ -659,6 +677,7 @@ class AttendanceTrackerBackend {
         }
 
         final safeNextLogRow =
+            _logQueue.toList().indexOf(entry) +
             (int.tryParse((header?.values?[0][startCol + 2]).toString()) ??
                 -2) +
             1;
@@ -687,6 +706,7 @@ class AttendanceTrackerBackend {
             ],
           ),
         );
+        logger.t("Updated entry: $entry");
         toRemove.add(entry);
       }
 
@@ -751,13 +771,13 @@ class AttendanceTrackerBackend {
 
     final event = ClockOutEvent(memberId, DateTime.now());
     _clockOutQueue.add(event);
-    if (_clockInQueue
-        .map((e) => e is ClockInEvent ? e.memberId : null)
-        .contains(memberId)) {
-      _clockInQueue.removeWhere(
-        (e) => (e is ClockInEvent ? e.memberId : null) == memberId,
-      );
-    }
+    // if (_clockInQueue
+    //     .map((e) => e is ClockInEvent ? e.memberId : null)
+    //     .contains(memberId)) {
+    //   _clockInQueue.removeWhere(
+    //     (e) => (e is ClockInEvent ? e.memberId : null) == memberId,
+    //   );
+    // }
 
     final memberIndex = attendance.value.indexWhere(
       (member) => member.id == memberId,
@@ -784,13 +804,13 @@ class AttendanceTrackerBackend {
 
     final event = ClockInEvent(memberId, DateTime.now(), location);
     _clockInQueue.add(event);
-    if (_clockOutQueue
-        .map((e) => e is ClockOutEvent ? e.memberId : null)
-        .contains(memberId)) {
-      _clockOutQueue.removeWhere(
-        (e) => (e is ClockOutEvent ? e.memberId : null) == memberId,
-      );
-    }
+    // if (_clockOutQueue
+    //     .map((e) => e is ClockOutEvent ? e.memberId : null)
+    //     .contains(memberId)) {
+    //   _clockOutQueue.removeWhere(
+    //     (e) => (e is ClockOutEvent ? e.memberId : null) == memberId,
+    //   );
+    // }
 
     final memberIndex = attendance.value.indexWhere(
       (member) => member.id == memberId,

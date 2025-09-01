@@ -80,13 +80,14 @@ class _AndroidLockdownPageState extends State<AndroidLockdownPage> {
             ),
             leading: const Icon(Icons.pin),
             trailing: Switch(
-              value: _settingsManager.getValue<bool>("app.immersive") ?? false,
+              value:
+                  _settingsManager.getValue<bool>("android.immersive") ?? false,
               onChanged: (value) {
                 setState(() {
-                  _settingsManager.setValue("app.immersive", value);
+                  _settingsManager.setValue("android.immersive", value);
                 });
-                if (_settingsManager.getValue<bool>("app.immersive") ??
-                    _settingsManager.getDefault<bool>("app.immersive")!) {
+                if (_settingsManager.getValue<bool>("android.immersive") ??
+                    _settingsManager.getDefault<bool>("android.immersive")!) {
                   SystemChrome.setEnabledSystemUIMode(
                     SystemUiMode.immersiveSticky,
                   );
@@ -104,10 +105,11 @@ class _AndroidLockdownPageState extends State<AndroidLockdownPage> {
             leading: const Icon(Icons.volume_off),
             trailing: Switch(
               value:
-                  _settingsManager.getValue<bool>("app.absorbvolume") ?? false,
+                  _settingsManager.getValue<bool>("android.absorbvolume") ??
+                  false,
               onChanged: (value) async {
                 setState(() {
-                  _settingsManager.setValue("app.absorbvolume", value);
+                  _settingsManager.setValue("android.absorbvolume", value);
                 });
                 await platform.invokeMethod('setAbsorbVolumeKeys', {
                   'enabled': value,
