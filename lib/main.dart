@@ -411,6 +411,7 @@ class _HomePageState extends State<HomePage>
     }
     if (!_backend.isMember(code)) {
       _displayErrorPopup("Member Not Found");
+      widget.logger.w("Member not found: $code");
       return;
     }
     beginUserFlow(context, _backend.getMemberById(code), true);

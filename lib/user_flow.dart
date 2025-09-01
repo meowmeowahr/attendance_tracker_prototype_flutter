@@ -163,6 +163,7 @@ class _UserFlowState extends State<UserFlow> {
               child: Center(
                 child: Column(
                   children: [
+                    Text("ID: ${widget.user.id}"),
                     Spacer(),
                     CircleAvatar(
                       radius: 128,
