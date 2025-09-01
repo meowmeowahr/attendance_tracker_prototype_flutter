@@ -43,6 +43,8 @@ class SettingsManager {
     _defaultSettings = {
       'google.oauth_credentials': '{}',
       'google.sheet_id': '',
+      'app.immersive': true,
+      'app.absorbvolume': false,
       'app.theme.mode': 'dark',
       'app.theme.accent': 'blue',
       'app.theme.logo': await assetPngToBase64(

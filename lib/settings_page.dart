@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:attendance_tracker/android_lockdown.dart';
 import 'package:attendance_tracker/image_util.dart';
 import 'package:attendance_tracker/serial.dart';
 import 'package:attendance_tracker/settings.dart';
@@ -241,23 +243,14 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _verifyAndProceed() async {
-    if (await _verifyPin(_enteredPin)) {
-      setState(() {
-        _isPinVerified = true;
-      });
-    } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Invalid PIN'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-      setState(() {
-        _enteredPin = '';
-      });
-    }
+  Future<void> _editAndroidLockdown(BuildContext context) async {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) {
+          return AndroidLockdownPage();
+        },
+      ),
+    );
   }
 
   Future<void> _editSheetId(BuildContext context) async {
@@ -1044,141 +1037,171 @@ class _SettingsPageState extends State<SettingsPage> {
       return _buildPinEntry(context);
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              children: [
-                ListTile(
-                  title: const Text("Google OAuth JSON Credentials"),
-                  subtitle: const Text(
-                    "The JSON file containing your Google OAuth credentials for accessing the Google Sheets API.",
-                  ),
-                  leading: const Icon(Icons.cloud),
-                  trailing: IconButton(
-                    onPressed: () => _editGoogleOauth(context),
-                    icon: const Icon(Icons.edit),
-                  ),
+    return Material(
+      child: SafeArea(
+        top: false,
+        child: Scaffold(
+          appBar: AppBar(title: const Text('Settings')),
+          body: Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  children: [
+                    if (Platform.isAndroid)
+                      ListTile(
+                        tileColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerLow,
+                        title: Text("Android Device Lockdown"),
+                        subtitle: const Text(
+                          "Lockdown the device for kiosk use.",
+                        ),
+                        leading: const Icon(Icons.android),
+                        trailing: IconButton(
+                          onPressed: () => _editAndroidLockdown(context),
+                          icon: const Icon(Icons.edit),
+                        ),
+                      ),
+                    ListTile(
+                      title: const Text("Google OAuth JSON Credentials"),
+                      subtitle: const Text(
+                        "The JSON file containing your Google OAuth credentials for accessing the Google Sheets API.",
+                      ),
+                      leading: const Icon(Icons.cloud),
+                      trailing: IconButton(
+                        onPressed: () => _editGoogleOauth(context),
+                        icon: const Icon(Icons.edit),
+                      ),
+                    ),
+                    ListTile(
+                      tileColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerLow,
+                      title: const Text('Google Sheet Spreadsheet ID'),
+                      subtitle: const Text(
+                        'The ID of the Google Sheet used for attendance tracking.',
+                      ),
+                      leading: const Icon(Icons.pages),
+                      trailing: IconButton(
+                        onPressed: () => _editSheetId(context),
+                        icon: const Icon(Icons.edit),
+                      ),
+                    ),
+                    ListTile(
+                      title: const Text("App Theme"),
+                      subtitle: Text(
+                        "Mode: ${_currentTheme?.capitalize() ?? ''}, Accent: ${_currentAccentColor?.capitalize() ?? ''}",
+                      ),
+                      leading: const Icon(Icons.color_lens),
+                      trailing: IconButton(
+                        onPressed: () => _editAppTheme(context),
+                        icon: const Icon(Icons.edit),
+                      ),
+                    ),
+                    ListTile(
+                      tileColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerLow,
+                      title: const Text("App Logo"),
+                      subtitle: Text("Logo used in the home screen."),
+                      leading: const Icon(Icons.image),
+                      trailing: IconButton(
+                        onPressed: () => _editAppLogo(context),
+                        icon: const Icon(Icons.edit),
+                      ),
+                    ),
+                    ListTile(
+                      title: const Text("Station Location Options"),
+                      subtitle: const Text(
+                        "Options for if the station is fixed, or floating, and the locations available.",
+                      ),
+                      leading: const Icon(Icons.location_on),
+                      trailing: IconButton(
+                        onPressed: () => _editStationLocation(context),
+                        icon: const Icon(Icons.edit),
+                      ),
+                    ),
+                    ListTile(
+                      tileColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerLow,
+                      title: const Text("Reset PIN"),
+                      subtitle: const Text(
+                        "Reset the PIN used for accessing admin settings.",
+                      ),
+                      leading: const Icon(Icons.lock),
+                      trailing: IconButton(
+                        onPressed: () => _resetPin(context),
+                        icon: const Icon(Icons.edit),
+                      ),
+                    ),
+                    ListTile(
+                      title: Text("Require PIN for Admin Sign-in"),
+                      subtitle: Text(
+                        "Request the PIN if an ADMIN user signs in/out without a badge",
+                      ),
+                      leading: Icon(Icons.pin),
+                      trailing: Switch(
+                        value:
+                            _settingsManager.getValue<bool>(
+                              "security.pin.require",
+                            ) ??
+                            true,
+                        onChanged: (value) {
+                          setState(() {
+                            _settingsManager.setValue(
+                              "security.pin.require",
+                              value,
+                            );
+                          });
+                        },
+                      ),
+                    ),
+                    ListTile(
+                      tileColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerLow,
+                      title: Text("RFID Card Reader Settings"),
+                      subtitle: Text(
+                        "Settings for the Serial/HID RFID Card Reader",
+                      ),
+                      leading: Icon(Icons.contactless),
+                      trailing: IconButton(
+                        onPressed: () => _editRfidSettings(context),
+                        icon: const Icon(Icons.edit),
+                      ),
+                    ),
+                    ListTile(
+                      title: const Text("Export Settings"),
+                      subtitle: const Text(
+                        "Your PIN will be saved as PLAIN TEXT",
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      leading: const Icon(Icons.download),
+                      trailing: IconButton(
+                        onPressed: () => _exportSettings(context),
+                        icon: const Icon(Icons.downloading),
+                      ),
+                    ),
+                    ListTile(
+                      tileColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerLow,
+                      title: const Text("Import Settings"),
+                      subtitle: const Text("Import settings from JSON file"),
+                      leading: const Icon(Icons.upload),
+                      trailing: IconButton(
+                        onPressed: () => _importSettings(context),
+                        icon: const Icon(Icons.upload_file),
+                      ),
+                    ),
+                  ],
                 ),
-                ListTile(
-                  tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
-                  title: const Text('Google Sheet Spreadsheet ID'),
-                  subtitle: const Text(
-                    'The ID of the Google Sheet used for attendance tracking.',
-                  ),
-                  leading: const Icon(Icons.pages),
-                  trailing: IconButton(
-                    onPressed: () => _editSheetId(context),
-                    icon: const Icon(Icons.edit),
-                  ),
-                ),
-                ListTile(
-                  title: const Text("App Theme"),
-                  subtitle: Text(
-                    "Mode: ${_currentTheme?.capitalize() ?? ''}, Accent: ${_currentAccentColor?.capitalize() ?? ''}",
-                  ),
-                  leading: const Icon(Icons.color_lens),
-                  trailing: IconButton(
-                    onPressed: () => _editAppTheme(context),
-                    icon: const Icon(Icons.edit),
-                  ),
-                ),
-                ListTile(
-                  tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
-                  title: const Text("App Logo"),
-                  subtitle: Text("Logo used in the home screen."),
-                  leading: const Icon(Icons.image),
-                  trailing: IconButton(
-                    onPressed: () => _editAppLogo(context),
-                    icon: const Icon(Icons.edit),
-                  ),
-                ),
-                ListTile(
-                  title: const Text("Station Location Options"),
-                  subtitle: const Text(
-                    "Options for if the station is fixed, or floating, and the locations available.",
-                  ),
-                  leading: const Icon(Icons.location_on),
-                  trailing: IconButton(
-                    onPressed: () => _editStationLocation(context),
-                    icon: const Icon(Icons.edit),
-                  ),
-                ),
-                ListTile(
-                  tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
-                  title: const Text("Reset PIN"),
-                  subtitle: const Text(
-                    "Reset the PIN used for accessing admin settings.",
-                  ),
-                  leading: const Icon(Icons.lock),
-                  trailing: IconButton(
-                    onPressed: () => _resetPin(context),
-                    icon: const Icon(Icons.edit),
-                  ),
-                ),
-                ListTile(
-                  title: Text("Require PIN for Admin Sign-in"),
-                  subtitle: Text(
-                    "Request the PIN if an ADMIN user signs in/out without a badge",
-                  ),
-                  leading: Icon(Icons.pin),
-                  trailing: Switch(
-                    value:
-                        _settingsManager.getValue<bool>(
-                          "security.pin.require",
-                        ) ??
-                        true,
-                    onChanged: (value) {
-                      setState(() {
-                        _settingsManager.setValue(
-                          "security.pin.require",
-                          value,
-                        );
-                      });
-                    },
-                  ),
-                ),
-                ListTile(
-                  tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
-                  title: Text("RFID Card Reader Settings"),
-                  subtitle: Text(
-                    "Settings for the Serial/HID RFID Card Reader",
-                  ),
-                  leading: Icon(Icons.contactless),
-                  trailing: IconButton(
-                    onPressed: () => _editRfidSettings(context),
-                    icon: const Icon(Icons.edit),
-                  ),
-                ),
-                ListTile(
-                  title: const Text("Export Settings"),
-                  subtitle: const Text(
-                    "Your PIN will be saved as PLAIN TEXT",
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  leading: const Icon(Icons.download),
-                  trailing: IconButton(
-                    onPressed: () => _exportSettings(context),
-                    icon: const Icon(Icons.downloading),
-                  ),
-                ),
-                ListTile(
-                  tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
-                  title: const Text("Import Settings"),
-                  subtitle: const Text("Import settings from JSON file"),
-                  leading: const Icon(Icons.upload),
-                  trailing: IconButton(
-                    onPressed: () => _importSettings(context),
-                    icon: const Icon(Icons.upload_file),
-                  ),
-                ),
-              ],
-            ),
+              ),
+              AdminStriper(),
+            ],
           ),
-          AdminStriper(),
-        ],
+        ),
       ),
     );
   }

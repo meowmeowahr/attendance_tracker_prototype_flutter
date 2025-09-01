@@ -145,6 +145,10 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  static const lockdownPlatform = MethodChannel(
+    'com.example.attendance_tracker/lockdown',
+  );
+
   // clock
   late ValueNotifier<DateTime> _now;
   late Timer _clockTimer;
@@ -341,6 +345,21 @@ class _HomePageState extends State<HomePage>
       final connOk = _rfidSerialStreamer.connect(); // attempt to connect
       _rfidSerialStreamer.stream.listen((data) => _processRfid(data));
       ("Connection to startup serial port: $connOk");
+    }
+
+    // kiosk
+    if (widget.settingsManager.getValue<bool>("app.immersive") ??
+        widget.settingsManager.getDefault<bool>("app.immersive")!) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } else {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+
+    if (widget.settingsManager.getValue<bool>("app.absorbvolume") ??
+        widget.settingsManager.getDefault<bool>("app.absorbvolume")!) {
+      lockdownPlatform.invokeMethod('setAbsorbVolumeKeys', {'enabled': true});
+    } else {
+      lockdownPlatform.invokeMethod('setAbsorbVolumeKeys', {'enabled': false});
     }
   }
 
