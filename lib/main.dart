@@ -456,26 +456,26 @@ class _HomePageState extends State<HomePage>
 
   void _displaySuccessPopup() async {
     player.play(AssetSource('sounds/success.wav'));
-    // showDialog(
-    //   barrierColor: Colors.green.withAlpha(40),
-    //   barrierDismissible: false,
-    //   context: context,
-    //   builder: (context) {
-    //     Timer(Duration(seconds: 1), () {
-    //       Navigator.of(context).pop();
-    //     });
-    //     return AlertDialog(
-    //       content: Column(
-    //         mainAxisSize: MainAxisSize.min,
-    //         children: [
-    //           Lottie.asset('assets/animations/success.json', reverse: true),
-    //         ],
-    //       ),
-    //       actionsPadding: EdgeInsets.zero,
-    //       actions: [],
-    //     );
-    //   },
-    // );
+    showDialog(
+      barrierColor: Colors.green.withAlpha(40),
+      barrierDismissible: false,
+      context: context,
+      builder: (context) {
+        Timer(Duration(seconds: 1), () {
+          Navigator.of(context).pop();
+        });
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Lottie.asset('assets/animations/success.json', reverse: true),
+            ],
+          ),
+          actionsPadding: EdgeInsets.zero,
+          actions: [],
+        );
+      },
+    );
   }
 
   @override

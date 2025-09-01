@@ -55,7 +55,7 @@ class SettingsManager {
       'station.fixed': true,
       'station.locations': [],
       'station.location': null,
-      'security.pin': '',
+      'security.pin': '000000',
       'security.pin.require': true,
       'rfid.reader': 'hid',
       'rfid.hid.timeout': 0.2,
