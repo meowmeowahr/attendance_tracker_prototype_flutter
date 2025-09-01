@@ -1089,7 +1089,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     ListTile(
                       title: const Text("Log Level"),
                       subtitle: Text(
-                        "Mode: ${_currentTheme?.capitalize() ?? ''}, Accent: ${_currentAccentColor?.capitalize() ?? ''}",
+                        "Restart required to apply",
+                        style: TextStyle(color: Colors.orange),
                       ),
                       leading: const Icon(Icons.info),
                       trailing: DropdownButton<Level>(
