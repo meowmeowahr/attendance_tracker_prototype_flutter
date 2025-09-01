@@ -18,14 +18,11 @@ class _AndroidLockdownPageState extends State<AndroidLockdownPage> {
 
   bool _isDefaultLauncher = false;
   final _settingsManager = SettingsManager();
-  bool _blockStatusBar = false;
 
   @override
   void initState() {
     super.initState();
     _checkDefaultLauncher();
-    _blockStatusBar =
-        _settingsManager.getValue<bool>("app.blockStatusBar") ?? false;
   }
 
   Future<void> _checkDefaultLauncher() async {

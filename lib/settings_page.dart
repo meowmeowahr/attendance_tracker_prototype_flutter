@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:android_intent_plus/android_intent.dart';
 import 'package:attendance_tracker/android_lockdown.dart';
 import 'package:attendance_tracker/image_util.dart';
 import 'package:attendance_tracker/serial.dart';
