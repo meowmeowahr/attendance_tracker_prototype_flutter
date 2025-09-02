@@ -20,7 +20,7 @@ class BoundedMemoryPrinter extends LogPrinter {
       ValueNotifier<List<LogEvent>>([]);
 
   BoundedMemoryPrinter({PrettyPrinter? prettyPrinter})
-    : _prettyPrinter = prettyPrinter ?? PrettyPrinter();
+    : _prettyPrinter = prettyPrinter ?? PrettyPrinter(methodCount: 0, dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart, noBoxingByDefault: true);
 
   @override
   List<String> log(LogEvent event) {
