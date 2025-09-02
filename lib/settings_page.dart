@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:attendance_tracker/android_lockdown.dart';
 import 'package:attendance_tracker/image_util.dart';
 import 'package:attendance_tracker/serial.dart';
@@ -349,20 +350,105 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             ),
             const SizedBox(height: 16),
-            SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'red', label: Text('Red')),
-                ButtonSegment(value: 'green', label: Text('Green')),
-                ButtonSegment(value: 'blue', label: Text('Blue')),
-                ButtonSegment(value: 'yellow', label: Text('Yellow')),
-              ],
-              selected: {_currentAccentColor ?? 'blue'},
-              onSelectionChanged: (newSelection) {
-                final selectedColor = newSelection.first;
-                setState(() => _currentAccentColor = selectedColor);
-                _settingsManager.setValue('app.theme.accent', selectedColor);
-                widget.themeController.updateAccent(selectedColor);
-              },
+            SingleChildScrollView(
+              child: Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() => _currentAccentColor = "red");
+                      _settingsManager.setValue('app.theme.accent', "red");
+                      widget.themeController.updateAccent("red");
+                    },
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(64, 64),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 19,
+                        vertical: 8,
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                    child: _currentAccentColor == "red"
+                        ? Icon(Icons.check, color: Colors.black)
+                        : Icon(Icons.circle, color: Colors.red),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() => _currentAccentColor = "green");
+                      _settingsManager.setValue('app.theme.accent', "green");
+                      widget.themeController.updateAccent("green");
+                    },
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(64, 64),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 19,
+                        vertical: 8,
+                      ),
+                      backgroundColor: Colors.green,
+                    ),
+                    child: _currentAccentColor == "green"
+                        ? Icon(Icons.check, color: Colors.black)
+                        : Icon(Icons.circle, color: Colors.green),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() => _currentAccentColor = "blue");
+                      _settingsManager.setValue('app.theme.accent', "blue");
+                      widget.themeController.updateAccent("blue");
+                    },
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(64, 64),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 19,
+                        vertical: 8,
+                      ),
+                      backgroundColor: Colors.blue,
+                    ),
+                    child: _currentAccentColor == "blue"
+                        ? Icon(Icons.check, color: Colors.black)
+                        : Icon(Icons.circle, color: Colors.blue),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() => _currentAccentColor = "yellow");
+                      _settingsManager.setValue('app.theme.accent', "yellow");
+                      widget.themeController.updateAccent("yellow");
+                    },
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(64, 64),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 19,
+                        vertical: 8,
+                      ),
+                      backgroundColor: Colors.yellow,
+                    ),
+                    child: _currentAccentColor == "yellow"
+                        ? Icon(Icons.check, color: Colors.black)
+                        : Icon(Icons.circle, color: Colors.yellow),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() => _currentAccentColor = "orange");
+                      _settingsManager.setValue('app.theme.accent', "orange");
+                      widget.themeController.updateAccent("orange");
+                    },
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(64, 64),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 19,
+                        vertical: 8,
+                      ),
+                      backgroundColor: Colors.orange,
+                    ),
+                    child: _currentAccentColor == "orange"
+                        ? Icon(Icons.check, color: Colors.black)
+                        : Icon(Icons.circle, color: Colors.orange),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

@@ -1,8 +1,9 @@
 import 'dart:convert';
+
 import 'package:attendance_tracker/image_util.dart';
+import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/material.dart';
 
 class ThemeController {
   final ValueNotifier<ThemeMode> themeMode = ValueNotifier(ThemeMode.dark);
@@ -18,6 +19,7 @@ class ThemeController {
       'green': Colors.green,
       'blue': Colors.blue,
       'yellow': Colors.yellow,
+      'orange': Colors.orange,
     };
     accentColor.value = colorMap[name] ?? Colors.blue;
   }
