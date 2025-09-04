@@ -372,7 +372,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     child: _currentAccentColor == "red"
                         ? Icon(Icons.check, color: Colors.black)
-                        : Icon(Icons.circle, color: Colors.red),
+                        : Icon(Icons.circle, color: Colors.transparent),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
@@ -391,7 +391,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     child: _currentAccentColor == "green"
                         ? Icon(Icons.check, color: Colors.black)
-                        : Icon(Icons.circle, color: Colors.green),
+                        : Icon(Icons.circle, color: Colors.transparent),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
@@ -410,7 +410,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     child: _currentAccentColor == "blue"
                         ? Icon(Icons.check, color: Colors.black)
-                        : Icon(Icons.circle, color: Colors.blue),
+                        : Icon(Icons.circle, color: Colors.transparent),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
@@ -429,7 +429,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     child: _currentAccentColor == "yellow"
                         ? Icon(Icons.check, color: Colors.black)
-                        : Icon(Icons.circle, color: Colors.yellow),
+                        : Icon(Icons.circle, color: Colors.transparent),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
@@ -448,7 +448,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     child: _currentAccentColor == "orange"
                         ? Icon(Icons.check, color: Colors.black)
-                        : Icon(Icons.circle, color: Colors.orange),
+                        : Icon(Icons.circle, color: Colors.transparent),
                   ),
                 ],
               ),
