@@ -202,6 +202,9 @@ class _SettingsPageState extends State<SettingsPage> {
                           setState(() {
                             _isPinVerified = true;
                           });
+                          widget.logger.i(
+                            "Successful entry into settings dialog by admin",
+                          );
                         } else {
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(

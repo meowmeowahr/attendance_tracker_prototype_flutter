@@ -322,6 +322,10 @@ class AttendanceTrackerBackend {
       logger.w("Google is down with timeout!!! $e");
       googleConnected.value = false;
       return;
+    } on DetailedApiRequestError catch (e) {
+      logger.w("Google is down with error!!! $e");
+      googleConnected.value = false;
+      return;
     }
 
     if (membersTableResponse == null || membersTableResponse.values == null) {
@@ -377,6 +381,10 @@ class AttendanceTrackerBackend {
       return;
     } on TimeoutException catch (e) {
       logger.w("Google is down with timeout!!! $e");
+      googleConnected.value = false;
+      return;
+    } on DetailedApiRequestError catch (e) {
+      logger.w("Google is down with error!!! $e");
       googleConnected.value = false;
       return;
     }
@@ -483,6 +491,10 @@ class AttendanceTrackerBackend {
       logger.w("Google is down with timeout!!! $e");
       googleConnected.value = false;
       return;
+    } on DetailedApiRequestError catch (e) {
+      logger.w("Google is down with error!!! $e");
+      googleConnected.value = false;
+      return;
     }
 
     _clockInQueue.removeWhere(
@@ -511,6 +523,10 @@ class AttendanceTrackerBackend {
       return;
     } on TimeoutException catch (e) {
       logger.w("Google is down with timeout!!! $e");
+      googleConnected.value = false;
+      return;
+    } on DetailedApiRequestError catch (e) {
+      logger.w("Google is down with error!!! $e");
       googleConnected.value = false;
       return;
     }
@@ -551,6 +567,10 @@ class AttendanceTrackerBackend {
         return;
       } on TimeoutException catch (e) {
         logger.w("Google is down with timeout!!! $e");
+        googleConnected.value = false;
+        return;
+      } on DetailedApiRequestError catch (e) {
+        logger.w("Google is down with error!!! $e");
         googleConnected.value = false;
         return;
       }
@@ -651,6 +671,10 @@ class AttendanceTrackerBackend {
         logger.w("Google is down with timeout!!! $e");
         googleConnected.value = false;
         return;
+      } on DetailedApiRequestError catch (e) {
+        logger.w("Google is down with error!!! $e");
+        googleConnected.value = false;
+        return;
       }
 
       // update logs
@@ -746,6 +770,10 @@ class AttendanceTrackerBackend {
         return;
       } on TimeoutException catch (e) {
         logger.w("Google is down with timeout!!! $e");
+        googleConnected.value = false;
+        return;
+      } on DetailedApiRequestError catch (e) {
+        logger.w("Google is down with error!!! $e");
         googleConnected.value = false;
         return;
       }
