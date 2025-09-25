@@ -336,6 +336,10 @@ class AttendanceTrackerBackend {
     List<Member> newMembers = [];
     for (List<dynamic> googleMember in membersTableResponse.values!) {
       // ID, Name, Privilege, Status, Location
+      if (googleMember.length != 5) {
+        logger.w("Malformed user detected, skipping user addition");
+        continue;
+      }
       newMembers.add(
         Member(
           int.tryParse(googleMember[0] as String) ?? -1,

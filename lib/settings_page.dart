@@ -1129,7 +1129,20 @@ class _SettingsPageState extends State<SettingsPage> {
       child: SafeArea(
         top: false,
         child: Scaffold(
-          appBar: AppBar(title: const Text('Settings')),
+          appBar: AppBar(
+            title: const Text('Settings'),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  "ADMIN",
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onInverseSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
           body: Column(
             children: [
               Expanded(
@@ -1335,7 +1348,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   ],
                 ),
               ),
-              AdminStriper(),
             ],
           ),
         ),
