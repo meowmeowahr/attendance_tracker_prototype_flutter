@@ -628,10 +628,26 @@ class AttendanceTrackerBackend {
       }
 
       // expand if needed
-      final sheetMetadata = await _sheetsClient!.spreadsheets.get(
-        _sheetId!,
-        ranges: [logSheetName],
-      );
+      Spreadsheet? sheetMetadata;
+      try {
+        sheetMetadata = await _sheetsClient!.spreadsheets.get(
+          _sheetId!,
+          ranges: [logSheetName],
+        );
+      } on SocketException catch (e) {
+        logger.w("Google is down!!! $e");
+        googleConnected.value = false;
+        return;
+      } on TimeoutException catch (e) {
+        logger.w("Google is down with timeout!!! $e");
+        googleConnected.value = false;
+        return;
+      } on DetailedApiRequestError catch (e) {
+        logger.w("Google is down with error!!! $e");
+        googleConnected.value = false;
+        return;
+      }
+
       final sheetProps = sheetMetadata.sheets!
           .firstWhere((s) => s.properties!.title == logSheetName)
           .properties!;
