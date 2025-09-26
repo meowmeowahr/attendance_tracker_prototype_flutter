@@ -63,13 +63,6 @@ class SettingsManager {
       'rfid.hid.timeout': 0.2,
       'rfid.hid.eol': 'RETURN',
       'rfid.hid.format': 'decAscii',
-      'rfid.serial.port': '/dev/ttyAMA0',
-      'rfid.serial.baud': 9600,
-      'rfid.serial.timeout': 0.5,
-      'rfid.serial.eol': '\\n',
-      'rfid.serial.format': 'decAscii',
-      'rfid.serial.checksum': 'none',
-      'rfid.serial.checksum.pos': 'end',
     };
   }
 

@@ -1,15 +1,13 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:async/async.dart';
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:attendance_tracker/backend.dart';
 import 'package:attendance_tracker/keyboard.dart';
 import 'package:attendance_tracker/log_printer.dart';
 import 'package:attendance_tracker/log_view.dart';
 import 'package:attendance_tracker/rfid_event.dart';
-import 'package:attendance_tracker/serial.dart';
 import 'package:attendance_tracker/settings.dart';
 import 'package:attendance_tracker/settings_page.dart';
 import 'package:attendance_tracker/state.dart';
@@ -182,11 +180,6 @@ class _HomePageState extends State<HomePage>
   final List<RfidEvent> _rfidHidInWaiting = [];
   late RestartableTimer _rfidHidTimeoutTimer;
 
-  // rfid serial
-  late final SerialRfidStream _rfidSerialStreamer = SerialRfidStream(
-    widget.logger,
-  );
-
   final player = AudioPlayer();
 
   @override
@@ -305,50 +298,6 @@ class _HomePageState extends State<HomePage>
       },
     );
     _rfidHidStream.listen((event) => _rfidHidEventListener(event));
-
-    // rfid serial
-    if ((widget.settingsManager.getValue<String>("rfid.reader") ??
-            widget.settingsManager.getDefault<String>("rfid.reader")!) ==
-        "serial") {
-      _rfidSerialStreamer.configure(
-        portPath:
-            widget.settingsManager.getValue<String>("rfid.serial.port") ??
-            widget.settingsManager.getDefault<String>("rfid.serial.port")!,
-        baudRate:
-            widget.settingsManager.getValue<int>("rfid.serial.baud") ??
-            widget.settingsManager.getDefault<int>("rfid.serial.baud")!,
-        readTimeoutMs:
-            ((widget.settingsManager.getValue<double>("rfid.serial.timeout") ??
-                        widget.settingsManager.getDefault<double>(
-                          "rfid.serial.timeout",
-                        )!) *
-                    1000)
-                .ceil(),
-        eolString: unescapeFormatCharacters(
-          widget.settingsManager.getValue<String>("rfid.serial.eol") ??
-              widget.settingsManager.getDefault<String>("rfid.serial.eol")!,
-        ),
-        dataFormat: DataFormat.values.byName(
-          widget.settingsManager.getValue<String>("rfid.serial.format") ??
-              widget.settingsManager.getDefault<String>("rfid.serial.format")!,
-        ),
-        checksumStyle: ChecksumStyle.values.byName(
-          widget.settingsManager.getValue<String>("rfid.serial.checksum") ??
-              widget.settingsManager.getDefault<String>(
-                "rfid.serial.checksum",
-              )!,
-        ),
-        checksumPosition: ChecksumPosition.values.byName(
-          widget.settingsManager.getValue<String>("rfid.serial.checksum.pos") ??
-              widget.settingsManager.getDefault<String>(
-                "rfid.serial.checksum.pos",
-              )!,
-        ),
-      );
-      final connOk = _rfidSerialStreamer.connect(); // attempt to connect
-      _rfidSerialStreamer.stream.listen((data) => _processRfid(data));
-      ("Connection to startup serial port: $connOk");
-    }
 
     // kiosk
     if (Platform.isAndroid) {
@@ -486,7 +435,6 @@ class _HomePageState extends State<HomePage>
   @override
   void dispose() {
     _clockTimer.cancel();
-    _rfidSerialStreamer.disconnect();
     super.dispose();
   }
 
@@ -520,21 +468,7 @@ class _HomePageState extends State<HomePage>
   }
 
   AppState _getStatus() {
-    if ((widget.settingsManager.getValue<String>("rfid.reader") ??
-                widget.settingsManager.getDefault<String>("rfid.reader")!) ==
-            "serial" &&
-        !_rfidSerialStreamer.isConnected &&
-        _rfidSerialStreamer.portError != null) {
-      return AppState(
-        Colors.red,
-        "RFID Reader Connection Error: ${_rfidSerialStreamer.portError}",
-      );
-    } else if ((widget.settingsManager.getValue<String>("rfid.reader") ??
-                widget.settingsManager.getDefault<String>("rfid.reader")!) ==
-            "serial" &&
-        !_rfidSerialStreamer.isConnected) {
-      return AppState(Colors.red, "RFID Reader Connection Lost");
-    } else if (_backend.googleConnected.value == false) {
+    if (_backend.googleConnected.value == false) {
       return AppState(Colors.amber, "Google Connection Lost");
     } else {
       return AppState(Colors.green, "System Ready");
@@ -626,78 +560,6 @@ class _HomePageState extends State<HomePage>
                                 )!,
                           );
                         });
-                        // rfid serial
-                        if ((widget.settingsManager.getValue<String>(
-                                  "rfid.reader",
-                                ) ??
-                                widget.settingsManager.getDefault<String>(
-                                  "rfid.reader",
-                                )!) ==
-                            "serial") {
-                          _rfidSerialStreamer.configure(
-                            portPath:
-                                widget.settingsManager.getValue<String>(
-                                  "rfid.serial.port",
-                                ) ??
-                                widget.settingsManager.getDefault<String>(
-                                  "rfid.serial.port",
-                                )!,
-                            baudRate:
-                                widget.settingsManager.getValue<int>(
-                                  "rfid.serial.baud",
-                                ) ??
-                                widget.settingsManager.getDefault<int>(
-                                  "rfid.serial.baud",
-                                )!,
-                            readTimeoutMs:
-                                ((widget.settingsManager.getValue<double>(
-                                              "rfid.serial.timeout",
-                                            ) ??
-                                            widget.settingsManager
-                                                .getDefault<double>(
-                                                  "rfid.serial.timeout",
-                                                )!) *
-                                        1000)
-                                    .ceil(),
-                            eolString: unescapeFormatCharacters(
-                              widget.settingsManager.getValue<String>(
-                                    "rfid.serial.eol",
-                                  ) ??
-                                  widget.settingsManager.getDefault<String>(
-                                    "rfid.serial.eol",
-                                  )!,
-                            ),
-                            dataFormat: DataFormat.values.byName(
-                              widget.settingsManager.getValue<String>(
-                                    "rfid.serial.format",
-                                  ) ??
-                                  widget.settingsManager.getDefault<String>(
-                                    "rfid.serial.format",
-                                  )!,
-                            ),
-                            checksumStyle: ChecksumStyle.values.byName(
-                              widget.settingsManager.getValue<String>(
-                                    "rfid.serial.checksum",
-                                  ) ??
-                                  widget.settingsManager.getDefault<String>(
-                                    "rfid.serial.checksum",
-                                  )!,
-                            ),
-                            checksumPosition: ChecksumPosition.values.byName(
-                              widget.settingsManager.getValue<String>(
-                                    "rfid.serial.checksum.pos",
-                                  ) ??
-                                  widget.settingsManager.getDefault<String>(
-                                    "rfid.serial.checksum.pos",
-                                  )!,
-                            ),
-                          );
-                          final connOk = _rfidSerialStreamer
-                              .connect(); // attempt to connect
-                          widget.logger.i(
-                            "Connection to post-setup serial port: $connOk",
-                          );
-                        }
 
                         // backend
                         _backend.initialize(
@@ -1075,91 +937,6 @@ class _HomePageState extends State<HomePage>
                                               )!,
                                     );
                                   });
-                                  // rfid serial
-                                  if ((widget.settingsManager.getValue<String>(
-                                            "rfid.reader",
-                                          ) ??
-                                          widget.settingsManager
-                                              .getDefault<String>(
-                                                "rfid.reader",
-                                              )!) ==
-                                      "serial") {
-                                    _rfidSerialStreamer.configure(
-                                      portPath:
-                                          widget.settingsManager
-                                              .getValue<String>(
-                                                "rfid.serial.port",
-                                              ) ??
-                                          widget.settingsManager
-                                              .getDefault<String>(
-                                                "rfid.serial.port",
-                                              )!,
-                                      baudRate:
-                                          widget.settingsManager.getValue<int>(
-                                            "rfid.serial.baud",
-                                          ) ??
-                                          widget.settingsManager
-                                              .getDefault<int>(
-                                                "rfid.serial.baud",
-                                              )!,
-                                      readTimeoutMs:
-                                          ((widget.settingsManager.getValue<
-                                                        double
-                                                      >(
-                                                        "rfid.serial.timeout",
-                                                      ) ??
-                                                      widget.settingsManager
-                                                          .getDefault<double>(
-                                                            "rfid.serial.timeout",
-                                                          )!) *
-                                                  1000)
-                                              .ceil(),
-                                      eolString: unescapeFormatCharacters(
-                                        widget.settingsManager.getValue<String>(
-                                              "rfid.serial.eol",
-                                            ) ??
-                                            widget.settingsManager
-                                                .getDefault<String>(
-                                                  "rfid.serial.eol",
-                                                )!,
-                                      ),
-                                      dataFormat: DataFormat.values.byName(
-                                        widget.settingsManager.getValue<String>(
-                                              "rfid.serial.format",
-                                            ) ??
-                                            widget.settingsManager
-                                                .getDefault<String>(
-                                                  "rfid.serial.format",
-                                                )!,
-                                      ),
-                                      checksumStyle: ChecksumStyle.values
-                                          .byName(
-                                            widget.settingsManager
-                                                    .getValue<String>(
-                                                      "rfid.serial.checksum",
-                                                    ) ??
-                                                widget.settingsManager
-                                                    .getDefault<String>(
-                                                      "rfid.serial.checksum",
-                                                    )!,
-                                          ),
-                                      checksumPosition: ChecksumPosition.values
-                                          .byName(
-                                            widget.settingsManager.getValue<
-                                                  String
-                                                >("rfid.serial.checksum.pos") ??
-                                                widget.settingsManager
-                                                    .getDefault<String>(
-                                                      "rfid.serial.checksum.pos",
-                                                    )!,
-                                          ),
-                                    );
-                                    final connOk = _rfidSerialStreamer
-                                        .connect(); // attempt to connect
-                                    widget.logger.i(
-                                      "Connection to post-setup serial port: $connOk",
-                                    );
-                                  }
 
                                   // backend
                                   _backend.initialize(

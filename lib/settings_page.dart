@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:attendance_tracker/android_lockdown.dart';
 import 'package:attendance_tracker/image_util.dart';
-import 'package:attendance_tracker/serial.dart';
 import 'package:attendance_tracker/settings.dart';
 import 'package:attendance_tracker/string_ext.dart';
 import 'package:attendance_tracker/util.dart';
@@ -711,9 +710,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         icon: Icon(Icons.keyboard),
                       ),
                       ButtonSegment(
-                        value: "serial",
-                        label: Text("Serial"),
-                        icon: Icon(Icons.cable),
+                        value: "disable",
+                        label: Text("Disabled"),
+                        icon: Icon(Icons.block),
                       ),
                     ],
                     selected: {
@@ -729,249 +728,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       });
                     },
                   ),
-                  if ((_settingsManager.getValue<String>("rfid.reader") ??
-                          _settingsManager.getDefault<String>(
-                            "rfid.reader",
-                          )!) ==
-                      "serial")
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(height: 16.0),
-                        FutureBuilder<List<String>>(
-                          future: listPortPaths(widget.logger),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            } else if (snapshot.hasData) {
-                              final List<String> availablePorts =
-                                  snapshot.data!;
 
-                              String? currentSelectedPort =
-                                  _settingsManager.getValue<String>(
-                                    "rfid.serial.port",
-                                  ) ??
-                                  _settingsManager.getDefault<String>(
-                                    "rfid.serial.port",
-                                  );
-
-                              if (currentSelectedPort != null &&
-                                  !availablePorts.contains(
-                                    currentSelectedPort,
-                                  )) {
-                                currentSelectedPort = null;
-                              }
-                              return DropdownButtonFormField<String>(
-                                decoration: const InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  label: Text("Port Path"),
-                                ),
-                                items: availablePorts
-                                    .map(
-                                      (path) => DropdownMenuItem<String>(
-                                        value: path,
-                                        child: Text(path),
-                                      ),
-                                    )
-                                    .toList(),
-                                initialValue: currentSelectedPort,
-                                onChanged: (newPath) {
-                                  setState(() {
-                                    _settingsManager.setValue(
-                                      "rfid.serial.port",
-                                      newPath,
-                                    );
-                                  });
-                                },
-                                hint: availablePorts.isEmpty
-                                    ? const Text("No ports available")
-                                    : null,
-                              );
-                            } else {
-                              return const Text('No ports found');
-                            }
-                          },
-                        ),
-                        SizedBox(height: 8.0),
-                        TextField(
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(),
-                            labelText: "Baudrate",
-                          ),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          controller: TextEditingController(
-                            text:
-                                (_settingsManager.getValue<int>(
-                                          "rfid.serial.baud",
-                                        ) ??
-                                        _settingsManager.getDefault<int>(
-                                          "rfid.serial.baud",
-                                        )!)
-                                    .toString(),
-                          ),
-                          onChanged: (newBaudrate) {
-                            _settingsManager.setValue(
-                              "rfid.serial.baud",
-                              int.tryParse(newBaudrate),
-                            );
-                          },
-                        ),
-                        SizedBox(height: 8.0),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DropdownButtonFormField(
-                                decoration: InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  label: Text("EOI Character"),
-                                ),
-                                items: ["\\n", "\\r", "\\r\\n", "\\x03"]
-                                    .map(
-                                      (eol) => DropdownMenuItem<String>(
-                                        value: eol,
-                                        child: Text(eol),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (newEOL) {
-                                  _settingsManager.setValue(
-                                    "rfid.serial.eol",
-                                    newEOL,
-                                  );
-                                },
-                                initialValue:
-                                    _settingsManager.getValue<String>(
-                                      "rfid.serial.eol",
-                                    ) ??
-                                    _settingsManager.getDefault<String>(
-                                      "rfid.serial.eol",
-                                    )!,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8.0),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DropdownButtonFormField(
-                                decoration: InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  label: Text("Checksum"),
-                                ),
-                                items: ChecksumStyle.values.map((style) {
-                                  return DropdownMenuItem<String>(
-                                    value: style.toString().split('.').last,
-                                    child: Text(
-                                      style.toString().split('.').last,
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (newCsum) {
-                                  _settingsManager.setValue(
-                                    "rfid.serial.checksum",
-                                    newCsum,
-                                  );
-                                },
-                                initialValue:
-                                    _settingsManager.getValue<String>(
-                                      "rfid.serial.checksum",
-                                    ) ??
-                                    _settingsManager.getDefault<String>(
-                                      "rfid.serial.checksum",
-                                    )!,
-                              ),
-                            ),
-                            SizedBox(width: 8.0),
-                            Expanded(
-                              child: DropdownButtonFormField(
-                                decoration: InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  label: Text("Pos"),
-                                ),
-                                items: ChecksumPosition.values.map((style) {
-                                  return DropdownMenuItem<String>(
-                                    value: style.toString().split('.').last,
-                                    child: Text(
-                                      style.toString().split('.').last,
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (newCsum) {
-                                  _settingsManager.setValue(
-                                    "rfid.serial.checksum.pos",
-                                    newCsum,
-                                  );
-                                },
-                                initialValue:
-                                    _settingsManager.getValue<String>(
-                                      "rfid.serial.checksum.pos",
-                                    ) ??
-                                    _settingsManager.getDefault<String>(
-                                      "rfid.serial.checksum.pos",
-                                    )!,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8.0),
-                        DropdownButtonFormField(
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(),
-                            label: Text("Data Format"),
-                          ),
-                          items: DataFormat.values.map((style) {
-                            return DropdownMenuItem<String>(
-                              value: style.toString().split('.').last,
-                              child: Text(style.toString().split('.').last),
-                            );
-                          }).toList(),
-                          onChanged: (newCsum) {
-                            _settingsManager.setValue(
-                              "rfid.serial.format",
-                              newCsum,
-                            );
-                          },
-                          initialValue:
-                              _settingsManager.getValue<String>(
-                                "rfid.serial.format",
-                              ) ??
-                              _settingsManager.getDefault<String>(
-                                "rfid.serial.format",
-                              )!,
-                        ),
-                        SizedBox(height: 4.0),
-                        Text(
-                          "Timeout (seconds):",
-                          textAlign: TextAlign.left,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        DoubleSpinBox(
-                          initialValue:
-                              _settingsManager.getValue<double>(
-                                "rfid.serial.timeout",
-                              ) ??
-                              _settingsManager.getDefault<double>(
-                                "rfid.serial.timeout",
-                              )!,
-                          min: 0.1,
-                          max: 10.0,
-                          step: 0.1,
-                          onChanged: (newTimeout) {
-                            _settingsManager.setValue(
-                              "rfid.serial.timeout",
-                              newTimeout,
-                            );
-                          },
-                        ),
-                      ],
-                    ),
                   if ((_settingsManager.getValue<String>("rfid.reader") ??
                           _settingsManager.getDefault<String>(
                             "rfid.reader",
@@ -1312,9 +1069,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     ListTile(
                       title: Text("RFID Card Reader Settings"),
-                      subtitle: Text(
-                        "Settings for the Serial/HID RFID Card Reader",
-                      ),
+                      subtitle: Text("Settings for the RFID Card Reader"),
                       leading: Icon(Icons.contactless),
                       trailing: IconButton(
                         onPressed: () => _editRfidSettings(context),
