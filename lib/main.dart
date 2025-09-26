@@ -469,7 +469,7 @@ class _HomePageState extends State<HomePage>
 
   AppState _getStatus() {
     if (_backend.googleConnected.value == false) {
-      return AppState(Colors.amber, "Google Connection Lost");
+      return AppState(Colors.amber, "Connection Lost");
     } else {
       return AppState(Colors.green, "System Ready");
     }
@@ -484,11 +484,40 @@ class _HomePageState extends State<HomePage>
         Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
-            child: ValueListenableBuilder(
-              valueListenable: _homeScreenImage,
-              builder: (context, image, widget) {
-                return Image.memory(image, width: iconSize, fit: BoxFit.fill);
-              },
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Spacer(),
+                ValueListenableBuilder(
+                  valueListenable: _homeScreenImage,
+                  builder: (context, image, widget) {
+                    return Image.memory(
+                      image,
+                      width: iconSize,
+                      fit: BoxFit.fill,
+                    );
+                  },
+                ),
+                Spacer(),
+                Card.filled(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: ValueListenableBuilder(
+                      valueListenable: _homeScreenState,
+                      builder: (context, value, child) {
+                        return Row(
+                          children: [
+                            Icon(Icons.circle, color: value.color, size: 18),
+                            SizedBox(width: 8),
+                            Text(value.description),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         )
@@ -517,6 +546,28 @@ class _HomePageState extends State<HomePage>
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        Card.filled(
+                          child: Padding(
+                            padding: const EdgeInsets.all(6.0),
+                            child: ValueListenableBuilder(
+                              valueListenable: _homeScreenState,
+                              builder: (context, value, child) {
+                                return Row(
+                                  children: [
+                                    Icon(
+                                      Icons.circle,
+                                      color: value.color,
+                                      size: 18,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(value.description),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 8),
                         Text(dateString, style: theme.textTheme.titleMedium),
                         Text(
                           timeString,
@@ -611,248 +662,169 @@ class _HomePageState extends State<HomePage>
           ),
         ),
       Flexible(
-        child: TabBarView(
-          controller: _currentBodyController,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            Material(
-              color: Theme.of(context).colorScheme.surfaceContainerLow,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Spacer(),
-                    RfidTapCard(),
-                    Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: FilledButton(
-                        onPressed: () {
-                          _nameSelectionScreenTimeout.reset();
-                          setState(() {
-                            _currentBodyController.index = 1;
-                          });
-                        },
-                        style: ButtonStyle(
-                          minimumSize: WidgetStateProperty.all(
-                            const Size.fromHeight(60),
-                          ),
-                          shape: WidgetStateProperty.all(
-                            RoundedRectangleBorder(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(8),
-                              ),
-                            ),
-                          ),
-                          textStyle: WidgetStateProperty.all(
-                            Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        child: const Text("Select Name"),
-                      ),
-                    ),
-                    Spacer(),
-                    Card.filled(
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: ValueListenableBuilder(
-                          valueListenable: _homeScreenState,
-                          builder: (context, value, child) {
-                            return Row(
-                              children: [
-                                Icon(
-                                  Icons.circle,
-                                  color: value.color,
-                                  size: 18,
-                                ),
-                                SizedBox(width: 8),
-                                Text(value.description),
-                              ],
-                            );
+        child: Material(
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          child: Column(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (widget.settingsManager.getValue<String>(
+                            "rfid.reader",
+                          ) !=
+                          "disable")
+                        RfidTapCard(),
+                      if (widget.settingsManager.getValue<String>(
+                            "rfid.reader",
+                          ) !=
+                          "disable")
+                        const SizedBox(height: 8),
+                      Expanded(
+                        child: Listener(
+                          behavior: HitTestBehavior.translucent,
+                          onPointerDown: (ev) {
+                            _nameSelectionScreenTimeout.cancel();
                           },
+                          onPointerUp: (ev) {
+                            _nameSelectionScreenTimeout.reset();
+                          },
+                          onPointerSignal: (ev) {
+                            _nameSelectionScreenTimeout.reset();
+                          },
+                          child: Material(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerLow,
+                            child: Column(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: VirtualTextField(
+                                    decoration: InputDecoration(
+                                      hintText: 'Search name...',
+                                      prefixIcon: Icon(Icons.search),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    onChanged: (value) {
+                                      _searchQuery = value;
+                                      filteredMembers.value = _backend
+                                          .attendance
+                                          .value
+                                          .where(
+                                            (member) => member.name
+                                                .toLowerCase()
+                                                .contains(
+                                                  _searchQuery.toLowerCase(),
+                                                ),
+                                          )
+                                          .toList();
+                                    },
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 2,
+                                  child: ValueListenableBuilder<List<Member>>(
+                                    valueListenable: _backend.attendance,
+                                    builder: (context, attendanceValue, child) {
+                                      filteredMembers.value = _backend
+                                          .attendance
+                                          .value
+                                          .where(
+                                            (member) => member.name
+                                                .toLowerCase()
+                                                .contains(
+                                                  _searchQuery.toLowerCase(),
+                                                ),
+                                          )
+                                          .toList();
+                                      return ValueListenableBuilder(
+                                        valueListenable: filteredMembers,
+                                        builder: (context, filterValue, child) {
+                                          return ListView.builder(
+                                            itemCount: filterValue.length,
+                                            itemBuilder: (context, index) {
+                                              final member = filterValue[index];
+                                              return ListTile(
+                                                leading: Stack(
+                                                  alignment:
+                                                      Alignment.bottomRight,
+                                                  children: [
+                                                    CircleAvatar(
+                                                      child: Text(
+                                                        member.name
+                                                            .split(' ')
+                                                            .map(
+                                                              (part) => part[0],
+                                                            )
+                                                            .take(2)
+                                                            .join(),
+                                                      ),
+                                                    ),
+                                                    Icon(
+                                                      Icons.circle,
+                                                      color:
+                                                          member.status ==
+                                                              AttendanceStatus
+                                                                  .present
+                                                          ? Colors.green
+                                                          : Colors.red,
+                                                      size: 12,
+                                                    ),
+                                                  ],
+                                                ),
+                                                title: Text(member.name),
+                                                subtitle: Text(
+                                                  member.status ==
+                                                          AttendanceStatus.out
+                                                      ? member.privilege
+                                                            .toString()
+                                                            .split('.')
+                                                            .last
+                                                            .capitalize()
+                                                      : "${member.privilege.toString().split('.').last.capitalize()} · ${member.location!}",
+                                                ),
+                                                onTap: () {
+                                                  beginUserFlow(
+                                                    context,
+                                                    member,
+                                                    false,
+                                                  );
+                                                },
+                                              );
+                                            },
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-            Column(
-              children: [
-                Container(
-                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                  height: 48,
+              SizedBox(
+                height: 200,
+                child: Container(
+                  color: Theme.of(context).colorScheme.surfaceContainerLowest,
                   child: Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(width: 8),
-                        IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _currentBodyController.index = 0;
-                            });
-                          },
-                          icon: Icon(Icons.arrow_back),
-                        ),
-                        Spacer(),
-                        Text(
-                          "Manual Name Selection",
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        Spacer(),
-                      ],
+                    child: VirtualKeyboard(
+                      rootLayoutPath: "assets/layouts/en-US.xml",
                     ),
                   ),
                 ),
-                Expanded(
-                  child: Listener(
-                    behavior: HitTestBehavior.translucent,
-                    onPointerDown: (ev) {
-                      _nameSelectionScreenTimeout.cancel();
-                    },
-                    onPointerUp: (ev) {
-                      _nameSelectionScreenTimeout.reset();
-                    },
-                    onPointerSignal: (ev) {
-                      _nameSelectionScreenTimeout.reset();
-                    },
-                    child: Material(
-                      color: Theme.of(context).colorScheme.surfaceContainerLow,
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: VirtualTextField(
-                              decoration: InputDecoration(
-                                hintText: 'Search name...',
-                                prefixIcon: Icon(Icons.search),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              onChanged: (value) {
-                                _searchQuery = value;
-                                filteredMembers.value = _backend
-                                    .attendance
-                                    .value
-                                    .where(
-                                      (member) => member.name
-                                          .toLowerCase()
-                                          .contains(_searchQuery.toLowerCase()),
-                                    )
-                                    .toList();
-                              },
-                            ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: ValueListenableBuilder<List<Member>>(
-                              valueListenable: _backend.attendance,
-                              builder: (context, attendanceValue, child) {
-                                filteredMembers.value = _backend
-                                    .attendance
-                                    .value
-                                    .where(
-                                      (member) => member.name
-                                          .toLowerCase()
-                                          .contains(_searchQuery.toLowerCase()),
-                                    )
-                                    .toList();
-                                return ValueListenableBuilder(
-                                  valueListenable: filteredMembers,
-                                  builder: (context, filterValue, child) {
-                                    return ListView.builder(
-                                      itemCount: filterValue.length,
-                                      itemBuilder: (context, index) {
-                                        final member = filterValue[index];
-                                        return ListTile(
-                                          leading: Stack(
-                                            alignment: Alignment.bottomRight,
-                                            children: [
-                                              CircleAvatar(
-                                                // backgroundColor:
-                                                //     HSVColor.fromColor(
-                                                //           ColorScheme.fromSeed(
-                                                //             seedColor: Color(
-                                                //               member.hashCode,
-                                                //             ).withAlpha(255),
-
-                                                //             brightness:
-                                                //                 Brightness.dark,
-                                                //           ).primary,
-                                                //         )
-                                                //         .withAlpha(0.5)
-                                                //         .withSaturation(0.6)
-                                                //         .toColor(),
-                                                child: Text(
-                                                  member.name
-                                                      .split(' ')
-                                                      .map((part) => part[0])
-                                                      .take(2)
-                                                      .join(),
-                                                ),
-                                              ),
-                                              Icon(
-                                                Icons.circle,
-                                                color:
-                                                    member.status ==
-                                                        AttendanceStatus.present
-                                                    ? Colors.green
-                                                    : Colors.red,
-                                                size: 12,
-                                              ),
-                                            ],
-                                          ),
-                                          title: Text(member.name),
-                                          subtitle: Text(
-                                            member.status ==
-                                                    AttendanceStatus.out
-                                                ? member.privilege
-                                                      .toString()
-                                                      .split('.')
-                                                      .last
-                                                      .capitalize()
-                                                : "${member.privilege.toString().split('.').last.capitalize()} · ${member.location!}",
-                                          ),
-                                          onTap: () {
-                                            beginUserFlow(
-                                              context,
-                                              member,
-                                              false,
-                                            );
-                                          },
-                                        );
-                                      },
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                          ),
-                          SizedBox(
-                            height: 200,
-                            child: Container(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerLowest,
-                              child: Center(
-                                child: VirtualKeyboard(
-                                  rootLayoutPath: "assets/layouts/en-US.xml",
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     ];
