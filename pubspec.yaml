@@ -40,7 +40,7 @@ dependencies:
   file_picker: ^10.3.2
   async: ^2.13.0
   lottie: ^3.3.1
-  googleapis: ^14.0.0
+  googleapis: ^15.0.0
   googleapis_auth: ^2.0.0
   http: ^1.5.0
   logger: ^2.6.1
