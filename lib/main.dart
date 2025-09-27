@@ -157,10 +157,6 @@ class _HomePageState extends State<HomePage>
   // home screen state
   late ValueNotifier<AppState> _homeScreenState;
 
-  // home tabs
-  late RestartableTimer _nameSelectionScreenTimeout;
-  late TabController _currentBodyController;
-
   // backend
   late AttendanceTrackerBackend _backend;
 
@@ -216,21 +212,12 @@ class _HomePageState extends State<HomePage>
     });
 
     // ui
-    _currentBodyController = TabController(
-      length: 2,
-      vsync: this,
-      initialIndex: 0,
-    );
     _homeScreenImage = ValueNotifier(
       base64.decode(
         widget.settingsManager.getValue<String>("app.theme.logo") ??
             widget.settingsManager.getDefault<String>("app.theme.logo")!,
       ),
     );
-    _nameSelectionScreenTimeout = RestartableTimer(Duration(seconds: 10), () {
-      _currentBodyController.index = 0;
-    });
-    _nameSelectionScreenTimeout.cancel();
 
     // rfid hid
     _rfidHidStreamController = StreamController<RfidEvent>.broadcast();
@@ -683,128 +670,116 @@ class _HomePageState extends State<HomePage>
                           "disable")
                         const SizedBox(height: 8),
                       Expanded(
-                        child: Listener(
-                          behavior: HitTestBehavior.translucent,
-                          onPointerDown: (ev) {
-                            _nameSelectionScreenTimeout.cancel();
-                          },
-                          onPointerUp: (ev) {
-                            _nameSelectionScreenTimeout.reset();
-                          },
-                          onPointerSignal: (ev) {
-                            _nameSelectionScreenTimeout.reset();
-                          },
-                          child: Material(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerLow,
-                            child: Column(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(4.0),
-                                  child: VirtualTextField(
-                                    decoration: InputDecoration(
-                                      hintText: 'Search name...',
-                                      prefixIcon: Icon(Icons.search),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
+                        child: Material(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerLow,
+                          child: Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: VirtualTextField(
+                                  decoration: InputDecoration(
+                                    hintText: 'Search name...',
+                                    prefixIcon: Icon(Icons.search),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                    onChanged: (value) {
-                                      _searchQuery = value;
-                                      filteredMembers.value = _backend
-                                          .attendance
-                                          .value
-                                          .where(
-                                            (member) => member.name
-                                                .toLowerCase()
-                                                .contains(
-                                                  _searchQuery.toLowerCase(),
-                                                ),
-                                          )
-                                          .toList();
-                                    },
                                   ),
+                                  onChanged: (value) {
+                                    _searchQuery = value;
+                                    filteredMembers.value = _backend
+                                        .attendance
+                                        .value
+                                        .where(
+                                          (member) => member.name
+                                              .toLowerCase()
+                                              .contains(
+                                                _searchQuery.toLowerCase(),
+                                              ),
+                                        )
+                                        .toList();
+                                  },
                                 ),
-                                Expanded(
-                                  flex: 2,
-                                  child: ValueListenableBuilder<List<Member>>(
-                                    valueListenable: _backend.attendance,
-                                    builder: (context, attendanceValue, child) {
-                                      filteredMembers.value = _backend
-                                          .attendance
-                                          .value
-                                          .where(
-                                            (member) => member.name
-                                                .toLowerCase()
-                                                .contains(
-                                                  _searchQuery.toLowerCase(),
-                                                ),
-                                          )
-                                          .toList();
-                                      return ValueListenableBuilder(
-                                        valueListenable: filteredMembers,
-                                        builder: (context, filterValue, child) {
-                                          return ListView.builder(
-                                            itemCount: filterValue.length,
-                                            itemBuilder: (context, index) {
-                                              final member = filterValue[index];
-                                              return ListTile(
-                                                leading: Stack(
-                                                  alignment:
-                                                      Alignment.bottomRight,
-                                                  children: [
-                                                    CircleAvatar(
-                                                      child: Text(
-                                                        member.name
-                                                            .split(' ')
-                                                            .map(
-                                                              (part) => part[0],
-                                                            )
-                                                            .take(2)
-                                                            .join(),
-                                                      ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: ValueListenableBuilder<List<Member>>(
+                                  valueListenable: _backend.attendance,
+                                  builder: (context, attendanceValue, child) {
+                                    filteredMembers.value = _backend
+                                        .attendance
+                                        .value
+                                        .where(
+                                          (member) => member.name
+                                              .toLowerCase()
+                                              .contains(
+                                                _searchQuery.toLowerCase(),
+                                              ),
+                                        )
+                                        .toList();
+                                    return ValueListenableBuilder(
+                                      valueListenable: filteredMembers,
+                                      builder: (context, filterValue, child) {
+                                        return ListView.builder(
+                                          itemCount: filterValue.length,
+                                          itemBuilder: (context, index) {
+                                            final member = filterValue[index];
+                                            return ListTile(
+                                              leading: Stack(
+                                                alignment:
+                                                    Alignment.bottomRight,
+                                                children: [
+                                                  CircleAvatar(
+                                                    child: Text(
+                                                      member.name
+                                                          .split(' ')
+                                                          .map(
+                                                            (part) => part[0],
+                                                          )
+                                                          .take(2)
+                                                          .join(),
                                                     ),
-                                                    Icon(
-                                                      Icons.circle,
-                                                      color:
-                                                          member.status ==
-                                                              AttendanceStatus
-                                                                  .present
-                                                          ? Colors.green
-                                                          : Colors.red,
-                                                      size: 12,
-                                                    ),
-                                                  ],
-                                                ),
-                                                title: Text(member.name),
-                                                subtitle: Text(
-                                                  member.status ==
-                                                          AttendanceStatus.out
-                                                      ? member.privilege
-                                                            .toString()
-                                                            .split('.')
-                                                            .last
-                                                            .capitalize()
-                                                      : "${member.privilege.toString().split('.').last.capitalize()} · ${member.location!}",
-                                                ),
-                                                onTap: () {
-                                                  beginUserFlow(
-                                                    context,
-                                                    member,
-                                                    false,
-                                                  );
-                                                },
-                                              );
-                                            },
-                                          );
-                                        },
-                                      );
-                                    },
-                                  ),
+                                                  ),
+                                                  Icon(
+                                                    Icons.circle,
+                                                    color:
+                                                        member.status ==
+                                                            AttendanceStatus
+                                                                .present
+                                                        ? Colors.green
+                                                        : Colors.red,
+                                                    size: 12,
+                                                  ),
+                                                ],
+                                              ),
+                                              title: Text(member.name),
+                                              subtitle: Text(
+                                                member.status ==
+                                                        AttendanceStatus.out
+                                                    ? member.privilege
+                                                          .toString()
+                                                          .split('.')
+                                                          .last
+                                                          .capitalize()
+                                                    : "${member.privilege.toString().split('.').last.capitalize()} · ${member.location!}",
+                                              ),
+                                              onTap: () {
+                                                beginUserFlow(
+                                                  context,
+                                                  member,
+                                                  false,
+                                                );
+                                              },
+                                            );
+                                          },
+                                        );
+                                      },
+                                    );
+                                  },
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
