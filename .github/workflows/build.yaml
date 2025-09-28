@@ -122,12 +122,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.35.1" # IMPORTANT: wildcards can't be used here
-          channel: "stable"
-
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -138,6 +132,24 @@ jobs:
             libgtk-3-dev liblzma-dev \
             libstdc++-12-dev \
             libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0
+
+      - name: Setup Flutter from Source
+        run: |
+          # Clone Flutter repository and checkout specific tag
+          git clone https://github.com/flutter/flutter.git --depth 1
+          cd flutter
+          git fetch --depth 1 origin tag 3.35.1
+          git checkout 3.35.1
+          cd ..
+          
+          # Add Flutter to PATH
+          echo "$GITHUB_WORKSPACE/flutter/bin" >> $GITHUB_PATH
+          
+          # Disable analytics
+          flutter config --no-analytics
+          
+          # Pre-download Flutter SDK
+          flutter precache
 
       - name: Enable Linux Support
         run: flutter config --enable-linux-desktop
@@ -157,7 +169,7 @@ jobs:
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-linux
+          name: release-linux-arm
           path: linux-arm64-${{ github.ref_name }}.tar.gz
 
   build_macos:
