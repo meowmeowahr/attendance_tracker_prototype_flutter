@@ -142,23 +142,20 @@ jobs:
           git checkout 3.35.1
           cd ..
           
-          # Add Flutter to PATH
-          echo "$GITHUB_WORKSPACE/flutter/bin" >> $GITHUB_PATH
-          
           # Disable analytics
-          flutter config --no-analytics
+          ./flutter/bin/flutter config --no-analytics
           
           # Pre-download Flutter SDK
-          flutter precache
+          ./flutter/bin/flutter precache
 
       - name: Enable Linux Support
-        run: flutter config --enable-linux-desktop
+        run: ./flutter/bin/flutter config --enable-linux-desktop
 
       - name: Install Dependencies
-        run: flutter pub get
+        run: ./flutter/bin/flutter pub get
 
       - name: Build Linux App
-        run: flutter build linux --release --verbose
+        run: ./flutter/bin/flutter build linux --release --verbose
 
       - name: Zip Linux Files
         run: |
