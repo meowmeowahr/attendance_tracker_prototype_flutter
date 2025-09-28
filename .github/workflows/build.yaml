@@ -241,6 +241,7 @@ jobs:
             artifacts/app-release.apk.sha1
             artifacts/windows-x86_64-${{ github.ref_name }}.zip
             artifacts/linux-x86_64-${{ github.ref_name }}.tar.gz
+            artifacts/linux-arm64-${{ github.ref_name }}.tar.gz
             artifacts/macos-x86_64-${{ github.ref_name }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
