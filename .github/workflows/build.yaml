@@ -88,7 +88,8 @@ jobs:
           sudo apt-get install -y curl git unzip xz-utils zip libglu1-mesa \
             clang cmake ninja-build pkg-config \
             libgtk-3-dev liblzma-dev libstdc++-12-dev \
-            libunwind-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0 libasound2-dev
+            libunwind-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0 libasound2-dev \
+            libopus-dev libogg-dev libvorbis-dev
 
       - name: Enable Linux Support
         run: flutter config --enable-linux-desktop
@@ -129,7 +130,8 @@ jobs:
           sudo apt-get install -y curl git unzip xz-utils zip libglu1-mesa \
             clang cmake ninja-build pkg-config \
             libgtk-3-dev liblzma-dev libstdc++-12-dev \
-            libunwind-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0 libasound2-dev
+            libunwind-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0 libasound2-dev \
+            libopus-dev libogg-dev libvorbis-dev
 
       - name: Setup Flutter from Source
         run: |

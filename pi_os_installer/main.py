@@ -335,7 +335,7 @@ def run_installer():
     # create .xsession
     xsession_path = os.path.join(home_dir, ".xsession")
     with open(xsession_path, "w") as xsession:
-        xsession.write("#!/bin/sh\nexec ratpoison\n")
+        xsession.write("#!/bin/sh\nexec pluseaudio --start\nexec ratpoison\n")
     console.print(f"[green]Created user XSession for {user_account}[/green]")
 
     try:
