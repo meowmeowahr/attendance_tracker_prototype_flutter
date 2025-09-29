@@ -34,7 +34,7 @@ GH_REPO: str = "meowmeowahr/attendance_tracker_prototype_flutter"
 
 CHECKS: dict[str, Callable[[], bool]] = {
     "Installer is running as root": lambda: is_root(),
-    "Available disk space is above 300MB": lambda: get_free_mb() > 300,
+    "Available disk space is above 2GB": lambda: get_free_mb() > 2048,
     "APT is available": lambda: has_apt()
 }
 
@@ -112,7 +112,7 @@ def update_packages(console):
     try:
         console.print("[*] Updating apt cache...")
         update_proc = subprocess.Popen(
-            ["sudo", "apt-get", "update"],
+            ["apt-get", "update"],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -136,7 +136,7 @@ def install_packages(console, packages):
         console.print(f"[*] Installing packages: {' '.join(packages)}")
         time.sleep(1)
         update_proc = subprocess.Popen(
-            ["sudo", "apt-get", "install", *packages, "-y", "--no-install-recommends"],
+            ["apt-get", "install", *packages, "-y", "--no-install-recommends"],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -157,6 +157,7 @@ def install_packages(console, packages):
 
 def run_installer():
     console = Console()
+    console.clear()
     console.print("[green]Welcome to the Attendance Tracker Installer![/green]")
 
     console.print("Running pre-install checks...")
@@ -322,7 +323,90 @@ def run_installer():
         console.print("[bold red]Installation failed![/bold red]")
         return 0
 
-    console.print("[green]Runtime dependencies installed[/green]")
+    console.print("Installing dependencies for X11 GUI")
+
+    ret = install_packages(console, ["xorg", "ratpoison", "lightdm", "pulseaudio"])
+    if not ret:
+        console.print("[bold red]Installation failed![/bold red]")
+        return 0
+
+    console.print("[green]X11 GUI dependencies installed[/green]")
+
+    # create .xsession
+    xsession_path = os.path.join(home_dir, ".xsession")
+    with open(xsession_path, "w") as xsession:
+        xsession.write("#!/bin/sh\nexec ratpoison\n")
+    console.print(f"[green]Created user XSession for {user_account}[/green]")
+
+    try:
+        uid = pwd.getpwnam(user_account).pw_uid
+        gid = grp.getgrnam(user_account).gr_gid
+
+        os.chown(xsession_path, uid, gid)
+        os.chmod(xsession_path, 0o764)
+
+        console.print(f"XSession ownership set to {user_account}:{user_account} and marked as 0o764")
+    except Exception as e:
+        console.print(f"[red]Warning: Could not set ownership: {repr(e)}[/red]")
+
+    # configure lightdm
+    with open("/usr/share/xsessions/ratpoison.desktop", "w") as ratpoison_xsession:
+        ratpoison_xsession.write(
+            """
+[Desktop Entry]
+Name=Ratpoison
+Comment=Ratpoison window manager
+Exec=ratpoison
+TryExec=ratpoison
+Type=Application
+"""
+        )
+    console.print(f"[green]Configured ratpoison desktop session: {user_account}[/green]")
+
+    os.makedirs("/etc/lightdm/lightdm.conf.d/", exist_ok=True)
+    with open("/etc/lightdm/lightdm.conf.d/99-attendance-tracker.conf", "w") as lightdm_conf:
+        lightdm_conf.write(
+            f"""
+[SeatDefaults]
+autologin-user={user_account}
+autologin-user-timeout=0
+user-session=ratpoison
+greeter-session=lightdm-gtk-greeter
+"""
+        )
+    console.print(f"[green]Configured LightDM autologin for user: {user_account}[/green]")
+
+    # set default boot target
+    update_proc = subprocess.Popen(
+        ["systemctl", "set-default", "graphical.target"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    for line in update_proc.stdout:
+        console.print(line, end="")
+    update_proc.wait()
+    if update_proc.returncode != 0:
+        raise subprocess.CalledProcessError(update_proc.returncode, "systemctl set-default graphical.target")
+    console.print(f"[green]Default target is set to graphical[/green]")
+
+    with open(os.path.join(home_dir, ".ratpoisonrc"), "w") as lightdm_conf:
+        lightdm_conf.write(
+            f"""
+exec ~/attendance-tracker/attendance_tracker
+"""
+        )
+    try:
+        uid = pwd.getpwnam(user_account).pw_uid
+        gid = grp.getgrnam(user_account).gr_gid
+
+        os.chown(os.path.join(home_dir, ".ratpoisonrc"), uid, gid)
+        os.chmod(os.path.join(home_dir, ".ratpoisonrc"), 0o764)
+
+        console.print(f"ratpoisonrc ownership set to {user_account}:{user_account} and marked as 0o644")
+    except Exception as e:
+        console.print(f"[red]Warning: Could not set ownership: {repr(e)}[/red]")
+    console.print(f"[green]Configured Attendance Tracker auto-start on login: {user_account}[/green]")
 
     console.print("[green]Installation complete.[/green]")
     return 0

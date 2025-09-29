@@ -15,7 +15,7 @@ import 'package:attendance_tracker/string_ext.dart';
 import 'package:attendance_tracker/user_flow.dart';
 import 'package:attendance_tracker/util.dart';
 import 'package:attendance_tracker/widgets.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -176,7 +176,9 @@ class _HomePageState extends State<HomePage>
   final List<RfidEvent> _rfidHidInWaiting = [];
   late RestartableTimer _rfidHidTimeoutTimer;
 
-  final player = AudioPlayer();
+  SoLoud? player;
+  AudioSource? successSfx;
+  AudioSource? failureSfx;
 
   @override
   void initState() {
@@ -304,9 +306,18 @@ class _HomePageState extends State<HomePage>
         });
       }
     }
+
+    initAudioSubsystem();
   }
 
-  void _rfidHidEventListener(RfidEvent event) {
+  Future<void> initAudioSubsystem() async {
+    await SoLoud.instance.init();
+    player = SoLoud.instance;
+    successSfx = await player?.loadAsset("assets/sounds/success.wav");
+    failureSfx = await player?.loadAsset("assets/sounds/error.wav");
+  }
+
+  Future<void> _rfidHidEventListener(RfidEvent event) async {
     _rfidHidTimeoutTimer.reset(); // reset the timeout
     _rfidHidInWaiting.add(event); // add new event
     final Map<String, String?> eolMap = {
@@ -361,7 +372,9 @@ class _HomePageState extends State<HomePage>
   }
 
   void _displayErrorPopup(String error) {
-    player.play(AssetSource('sounds/error.wav'));
+    if (failureSfx != null) {
+      player?.play(failureSfx!);
+    }
     final rootContext = context; // capture once from the widget
     showDialog(
       barrierColor: Colors.red.withAlpha(40),
@@ -391,7 +404,9 @@ class _HomePageState extends State<HomePage>
   }
 
   void _displaySuccessPopup() async {
-    player.play(AssetSource('sounds/success.wav'));
+    if (successSfx != null) {
+      player?.play(successSfx!);
+    }
     showDialog(
       barrierColor: Colors.green.withAlpha(40),
       barrierDismissible: false,

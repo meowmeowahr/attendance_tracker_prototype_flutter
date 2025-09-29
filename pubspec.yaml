@@ -44,8 +44,8 @@ dependencies:
   googleapis_auth: ^2.0.0
   http: ^1.5.0
   logger: ^2.6.1
-  audioplayers: ^6.5.0
   android_intent_plus: ^6.0.0
+  flutter_soloud: ^3.3.7
 
 dev_dependencies:
   flutter_test:
