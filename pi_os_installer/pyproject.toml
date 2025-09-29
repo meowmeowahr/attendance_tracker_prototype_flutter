@@ -1,0 +1,14 @@
+[project]
+name = "pi-os-installer"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+
+# Dependencies are only used for IDE integration
+# They will be installed during runtime by the installation script
+dependencies = [
+    "rich~=14.1.0",
+    "prompt-toolkit~=3.0.52",
+    "requests~=2.32.5"
+]
