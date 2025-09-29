@@ -218,7 +218,7 @@ def run_installer():
                 }
                 valid_releases.append(release_info)
     except Exception as e:
-        console.print(f"[red]Error fetching releases: {repr(e)}[/red]")
+        console.print(f"[bold red]Error fetching releases: {repr(e)}[/bold red]")
         return 1
 
     release_choice = choice(
@@ -277,7 +277,7 @@ def run_installer():
 
     console.print("[green]Download complete.[/green]")
 
-    extract_dir = os.path.join(home_dir, f"attendance-tracker-{release_choice}")
+    extract_dir = os.path.join(home_dir, f"attendance-tracker")
     os.makedirs(extract_dir, exist_ok=True)
     console.print(f"[cyan]Extracting to {extract_dir}[/cyan]")
 
@@ -312,8 +312,17 @@ def run_installer():
 
     console.print("Installing dependencies for Attendance Tracker Runtime")
 
-    update_packages(console)
-    install_packages(console, ["libgtk-3-0", "libgstreamer-plugins-base1.0-0"])
+    ret = update_packages(console)
+    if not ret:
+        console.print("[bold red]Installation failed![/bold red]")
+        return 0
+
+    ret = install_packages(console, ["libgtk-3-0", "libgstreamer-plugins-base1.0-0"])
+    if not ret:
+        console.print("[bold red]Installation failed![/bold red]")
+        return 0
+
+    console.print("[green]Runtime dependencies installed[/green]")
 
     console.print("[green]Installation complete.[/green]")
     return 0
