@@ -7,6 +7,8 @@ import time
 import venv
 import shutil
 import pwd
+import grp
+import tarfile
 from shutil import which
 from typing import Callable
 
@@ -14,11 +16,13 @@ try:
     from rich.console import Console
     from prompt_toolkit import choice
     from prompt_toolkit.formatted_text import HTML
+    from prompt_toolkit.shortcuts import ProgressBar
     import requests
 except ImportError:
     Console = None
     choice = None
     HTML = None
+    ProgressBar = None
     requests = None
 
 ENV_PATH: str = os.environ.get("ENV_PATH", "/tmp/attendanceTrackerInstallerEnv")
@@ -104,6 +108,53 @@ def install_countdown(console: Console, seconds: int = 5) -> bool:
         console.print("\n[bold red]Cancelled by user (Ctrl+C)[/]")
         return False
 
+def update_packages(console):
+    try:
+        console.print("[*] Updating apt cache...")
+        update_proc = subprocess.Popen(
+            ["sudo", "apt-get", "update"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        for line in update_proc.stdout:
+            console.print(line, end="")
+        update_proc.wait()
+        if update_proc.returncode != 0:
+            raise subprocess.CalledProcessError(update_proc.returncode, "apt-get update")
+
+        console.print("[*] Cache updated")
+
+    except subprocess.CalledProcessError as e:
+        console.print(f"[red]Error during package update: {e}[/red]", file=sys.stderr)
+        return False
+
+    return True
+
+def install_packages(console, packages):
+    try:
+        console.print(f"[*] Installing packages: {' '.join(packages)}")
+        time.sleep(1)
+        update_proc = subprocess.Popen(
+            ["sudo", "apt-get", "install", *packages, "-y", "--no-install-recommends"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        for line in update_proc.stdout:
+            console.print(line.replace("\r\n", "\n").replace("\r", "\n"), end="")
+        update_proc.wait()
+        if update_proc.returncode != 0:
+            raise subprocess.CalledProcessError(update_proc.returncode, "apt-get install")
+
+        console.print("[*] Cache updated")
+
+    except subprocess.CalledProcessError as e:
+        console.print(f"[red]Error during package install: {e}[/red]", file=sys.stderr)
+        return False
+
+    return True
+
 def run_installer():
     console = Console()
     console.print("[green]Welcome to the Attendance Tracker Installer![/green]")
@@ -127,9 +178,7 @@ def run_installer():
     user_account = choice(
         message="Please choose a UNIX user to install to:",
         options=[
-            (user.pw_name, user.pw_name)
-            for user in pwd.getpwall()
-            if user.pw_shell
+            (user.pw_name, user.pw_name) for user in pwd.getpwall() if user.pw_shell
             not in (
                 "/usr/bin/nologin",
                 "/usr/sbin/nologin",
@@ -195,6 +244,76 @@ def run_installer():
     console.print(
         f"[cyan]Installing Attendance Tracker for user: {user_account}[/cyan]"
     )
+
+    # download release
+    release = next(rel for rel in valid_releases if rel["version"] == release_choice)
+    dl_url = release["dl_url"]
+
+    home_dir = os.path.expanduser(f"~{user_account}")
+    os.makedirs(home_dir, exist_ok=True)
+    dest_path = os.path.join(home_dir, f"attendance-tracker-{release_choice}.tar.gz")
+
+    console.print(f"[cyan]Downloading {dl_url} → {dest_path}[/cyan]")
+
+    try:
+        with requests.get(dl_url, stream=True, timeout=10) as r:
+            r.raise_for_status()
+            total = int(r.headers.get("Content-Length", 0))
+            with open(dest_path, "wb") as f, ProgressBar() as pb:
+                for chunk in pb(r.iter_content(chunk_size=8192), total=total // 8192):
+                    if chunk:
+                        f.write(chunk)
+    except Exception as e:
+        console.print(f"[red]Error downloading release: {repr(e)}[/red]")
+        return 1
+
+    # Fix ownership (assume group == username)
+    try:
+        uid = pwd.getpwnam(user_account).pw_uid
+        gid = grp.getgrnam(user_account).gr_gid
+        os.chown(dest_path, uid, gid)
+    except Exception as e:
+        console.print(f"[red]Warning: Could not change file ownership: {repr(e)}[/red]")
+
+    console.print("[green]Download complete.[/green]")
+
+    extract_dir = os.path.join(home_dir, f"attendance-tracker-{release_choice}")
+    os.makedirs(extract_dir, exist_ok=True)
+    console.print(f"[cyan]Extracting to {extract_dir}[/cyan]")
+
+    try:
+        with tarfile.open(dest_path, "r:gz") as tar:
+            members = tar.getmembers()
+            total_members = len(members)
+
+            with ProgressBar() as pb:
+                for member in pb(members, total=total_members):
+                    tar.extract(member, path=extract_dir)
+    except Exception as e:
+        console.print(f"[red]Error extracting tarball: {repr(e)}[/red]")
+        return 1
+
+    try:
+        uid = pwd.getpwnam(user_account).pw_uid
+        gid = grp.getgrnam(user_account).gr_gid
+
+        for root, dirs, files in os.walk(extract_dir):
+            os.chown(root, uid, gid)
+            for d in dirs:
+                os.chown(os.path.join(root, d), uid, gid)
+            for f_name in files:
+                os.chown(os.path.join(root, f_name), uid, gid)
+
+        console.print(f"Files ownership set to {user_account}:{user_account}")
+    except Exception as e:
+        console.print(f"[red]Warning: Could not set ownership: {repr(e)}[/red]")
+
+    console.print("[green]Extraction complete.[/green]")
+
+    console.print("Installing dependencies for Attendance Tracker Runtime")
+
+    update_packages(console)
+    install_packages(console, ["libgtk-3-0", "libgstreamer-plugins-base1.0-0"])
 
     console.print("[green]Installation complete.[/green]")
     return 0
