@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 import 'package:attendance_tracker/settings.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:flutter/services.dart';
@@ -26,7 +27,7 @@ class _AndroidLockdownPageState extends State<AndroidLockdownPage> {
   }
 
   Future<void> _checkDefaultLauncher() async {
-    if (!Platform.isAndroid) return;
+    if (kIsWeb || !Platform.isAndroid) return;
     try {
       final bool result = await platform.invokeMethod('isDefaultLauncher');
       setState(() {
@@ -40,7 +41,7 @@ class _AndroidLockdownPageState extends State<AndroidLockdownPage> {
   }
 
   void _openHomeSettings() {
-    if (Platform.isAndroid) {
+    if (!kIsWeb && Platform.isAndroid) {
       final intent = AndroidIntent(action: 'android.settings.HOME_SETTINGS');
       intent.launch().then((_) async {
         await platform.invokeMethod('restartToHome');

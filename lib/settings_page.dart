@@ -8,6 +8,7 @@ import 'package:attendance_tracker/string_ext.dart';
 import 'package:attendance_tracker/util.dart';
 import 'package:attendance_tracker/widgets.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
@@ -302,11 +303,23 @@ class _SettingsPageState extends State<SettingsPage> {
                 final result = await FilePicker.platform.pickFiles(
                   type: FileType.custom,
                   allowedExtensions: ['json'],
+                  withData: true, // needed for web
                 );
-                if (result == null || result.files.single.path == null) return;
+                if (result == null) return;
 
-                final file = File(result.files.single.path!);
-                final contents = await file.readAsString();
+                String contents;
+                if (kIsWeb) {
+                  // On web, use in-memory bytes
+                  final bytes = result.files.single.bytes;
+                  if (bytes == null) return;
+                  contents = utf8.decode(bytes);
+                } else {
+                  // On desktop/mobile, read from file path
+                  final path = result.files.single.path;
+                  if (path == null) return;
+                  final file = File(path);
+                  contents = await file.readAsString();
+                }
 
                 // Validate JSON
                 jsonDecode(contents);
@@ -318,9 +331,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 if (!context.mounted) return;
                 Navigator.pop(context);
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Invalid JSON file')),
-                );
+                print(e);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Invalid JSON file')),
+                  );
+                }
               }
             },
             child: const Text('Select File'),
@@ -329,6 +345,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
+
 
   Future<void> _editAppTheme(BuildContext context) async {
     return showDialog(
@@ -489,22 +506,38 @@ class _SettingsPageState extends State<SettingsPage> {
                     final result = await FilePicker.platform.pickFiles(
                       type: FileType.custom,
                       allowedExtensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'],
+                      withData: true, // required for web
                     );
-                    if (result != null && result.files.single.path != null) {
-                      setState(() {
-                        _settingsManager.setValue(
-                          "app.theme.logo",
-                          pngToBase64(result.files.single.path!),
-                        );
-                      });
+                    if (result == null) return;
+
+                    String base64Image;
+                    if (kIsWeb) {
+                      // Web → use in-memory bytes
+                      final bytes = result.files.single.bytes;
+                      if (bytes == null) return;
+                      base64Image = base64Encode(bytes);
+                    } else {
+                      // Desktop/Mobile → use file path
+                      final path = result.files.single.path;
+                      if (path == null) return;
+                      final file = File(path);
+                      final bytes = await file.readAsBytes();
+                      base64Image = base64Encode(bytes);
                     }
-                  } catch (e) {
+
+                    if (!context.mounted) return;
+                    setState(() {
+                      _settingsManager.setValue("app.theme.logo", base64Image);
+                    });
+                  } catch (e, st) {
+                    debugPrint("Failed to import image: $e\n$st");
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Failed to import image')),
                     );
                   }
                 },
+
               ),
             ],
           ),
@@ -857,24 +890,40 @@ class _SettingsPageState extends State<SettingsPage> {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json'],
+        withData: true, // important for web
       );
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
-        final json = await file.readAsString();
-        await _settingsManager.importFromJson(json);
-        await _loadSettings();
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Settings imported successfully')),
-        );
+      if (result == null) return;
+
+      String json;
+      if (kIsWeb) {
+        // Web → use in-memory bytes
+        final bytes = result.files.single.bytes;
+        if (bytes == null) return;
+        json = utf8.decode(bytes);
+      } else {
+        // Desktop/Mobile → use file path
+        final path = result.files.single.path;
+        if (path == null) return;
+        final file = File(path);
+        json = await file.readAsString();
       }
-    } catch (e) {
+
+      await _settingsManager.importFromJson(json);
+      await _loadSettings();
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Settings imported successfully')),
+      );
+    } catch (e, st) {
+      debugPrint('Settings import failed: $e\n$st');
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to import settings')),
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -905,7 +954,7 @@ class _SettingsPageState extends State<SettingsPage> {
               Expanded(
                 child: ListView(
                   children: [
-                    if (Platform.isAndroid)
+                    if (!kIsWeb && Platform.isAndroid)
                       ListTile(
                         tileColor: Theme.of(
                           context,

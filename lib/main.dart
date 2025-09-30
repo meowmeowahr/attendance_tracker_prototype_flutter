@@ -15,6 +15,7 @@ import 'package:attendance_tracker/string_ext.dart';
 import 'package:attendance_tracker/user_flow.dart';
 import 'package:attendance_tracker/util.dart';
 import 'package:attendance_tracker/widgets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -236,6 +237,13 @@ class _HomePageState extends State<HomePage>
             DateTime.fromMicrosecondsSinceEpoch(event.timeStamp.inMilliseconds),
           ),
         );
+      } else if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) { // workaround for bug on web
+        _rfidHidStreamController.sink.add(
+          RfidEvent(
+            "\n",
+            DateTime.fromMicrosecondsSinceEpoch(event.timeStamp.inMilliseconds),
+          ),
+        );
       }
       return false; // reject the event, pass to widgets
     });
@@ -289,7 +297,7 @@ class _HomePageState extends State<HomePage>
     _rfidHidStream.listen((event) => _rfidHidEventListener(event));
 
     // kiosk
-    if (Platform.isAndroid) {
+    if (!kIsWeb && Platform.isAndroid) {
       if (widget.settingsManager.getValue<bool>("android.immersive") ??
           widget.settingsManager.getDefault<bool>("android.immersive")!) {
         SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
