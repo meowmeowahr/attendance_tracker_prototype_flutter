@@ -31,11 +31,13 @@ SKIP_CHECKS: bool = os.environ.get("SKIP_CHECKS", False)
 DEPS: list[str] = ["rich~=14.1.0", "prompt-toolkit~=3.0.52", "requests~=2.32.5"]
 
 GH_REPO: str = "meowmeowahr/attendance_tracker_prototype_flutter"
+APP_PROCESS_NAME: str = "/home/pi/attendance-tracker/attendance_tracker"
 
 CHECKS: dict[str, Callable[[], bool]] = {
     "Installer is running as root": lambda: is_root(),
     "Available disk space is above 2GB": lambda: get_free_mb() > 2048,
-    "APT is available": lambda: has_apt()
+    "APT is available": lambda: has_apt(),
+    "No application instances running": lambda: not is_process_or_child_running(APP_PROCESS_NAME)
 }
 
 
@@ -91,6 +93,60 @@ def is_root():
 
 def has_apt():
     return which("apt") is not None and which("apt-get") is not None
+
+def get_proc_name(pid: str) -> str | None:
+    """Get process name from /proc/[pid]/comm."""
+    try:
+        with open(f"/proc/{pid}/comm", "r") as f:
+            return f.read().strip()
+    except (FileNotFoundError, PermissionError):
+        return None
+
+def get_proc_ppid(pid: str) -> int | None:
+    """Get parent PID from /proc/[pid]/stat."""
+    try:
+        with open(f"/proc/{pid}/stat", "r") as f:
+            fields = f.read().split()
+            return int(fields[3])  # 4th field is PPID
+    except (FileNotFoundError, PermissionError, IndexError, ValueError):
+        return None
+
+def is_process_or_child_running(name: str) -> bool:
+    """
+    Check if a process with the given name or any subprocess it spawned is running.
+    """
+    # First, find all PIDs with the target name
+    target_pids = []
+    for pid in os.listdir("/proc"):
+        if pid.isdigit():
+            proc_name = get_proc_name(pid)
+            if proc_name == name:
+                target_pids.append(int(pid))
+
+    if not target_pids:
+        return False
+
+    # Build parent->children mapping
+    children = {}
+    for pid in os.listdir("/proc"):
+        if pid.isdigit():
+            ppid = get_proc_ppid(pid)
+            if ppid is not None:
+                children.setdefault(ppid, []).append(int(pid))
+
+    # DFS to see if any child exists for our target processes
+    seen = set()
+    stack = list(target_pids)
+    while stack:
+        cur = stack.pop()
+        if cur in seen:
+            continue
+        seen.add(cur)
+        if cur in children:
+            stack.extend(children[cur])
+
+    return bool(seen)
+
 
 def install_countdown(console: Console, seconds: int = 5) -> bool:
     try:
@@ -318,14 +374,14 @@ def run_installer():
         console.print("[bold red]Installation failed![/bold red]")
         return 0
 
-    ret = install_packages(console, ["libgtk-3-0", "libgstreamer-plugins-base1.0-0"])
+    ret = install_packages(console, ["libgtk-3-0", "libgstreamer-plugins-base1.0-0", "fonts-noto-color-emoji", "libvorbisfile3"])
     if not ret:
         console.print("[bold red]Installation failed![/bold red]")
         return 0
 
     console.print("Installing dependencies for X11 GUI")
 
-    ret = install_packages(console, ["xorg", "ratpoison", "lightdm", "pulseaudio"])
+    ret = install_packages(console, ["xorg", "ratpoison", "lightdm", "pulseaudio", "xdg-desktop-portal-gtk"])
     if not ret:
         console.print("[bold red]Installation failed![/bold red]")
         return 0
