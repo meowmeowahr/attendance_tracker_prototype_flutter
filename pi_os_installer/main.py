@@ -381,7 +381,7 @@ def run_installer():
 
     console.print("Installing dependencies for X11 GUI")
 
-    ret = install_packages(console, ["xorg", "ratpoison", "lightdm", "pulseaudio", "xdg-desktop-portal-gtk"])
+    ret = install_packages(console, ["xorg", "ratpoison", "lightdm", "pulseaudio", "xdg-desktop-portal-gtk", "udisks2", "udiskie"])
     if not ret:
         console.print("[bold red]Installation failed![/bold red]")
         return 0
@@ -449,6 +449,7 @@ greeter-session=lightdm-gtk-greeter
     with open(os.path.join(home_dir, ".ratpoisonrc"), "w") as lightdm_conf:
         lightdm_conf.write(
             f"""
+exec udiskie -a -n -t &
 exec ~/attendance-tracker/attendance_tracker
 """
         )
