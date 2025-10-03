@@ -381,7 +381,7 @@ def run_installer():
 
     console.print("Installing dependencies for X11 GUI")
 
-    ret = install_packages(console, ["xorg", "ratpoison", "lightdm", "pulseaudio", "xdg-desktop-portal-gtk", "udisks2", "udiskie"])
+    ret = install_packages(console, ["xorg", "ratpoison", "lightdm", "pulseaudio", "xdg-desktop-portal-gtk", "udisks2", "udiskie", "gldriver-test"]) # TODO: Test this on Pi4, Pi5 works
     if not ret:
         console.print("[bold red]Installation failed![/bold red]")
         return 0
@@ -391,7 +391,7 @@ def run_installer():
     # create .xsession
     xsession_path = os.path.join(home_dir, ".xsession")
     with open(xsession_path, "w") as xsession:
-        xsession.write("#!/bin/sh\nexec pluseaudio --start\nexec ratpoison\n")
+        xsession.write("#!/bin/sh\nexec pulseaudio --start\nexec ratpoison\n")
     console.print(f"[green]Created user XSession for {user_account}[/green]")
 
     try:
@@ -419,11 +419,10 @@ Type=Application
         )
     console.print(f"[green]Configured ratpoison desktop session: {user_account}[/green]")
 
-    os.makedirs("/etc/lightdm/lightdm.conf.d/", exist_ok=True)
-    with open("/etc/lightdm/lightdm.conf.d/99-attendance-tracker.conf", "w") as lightdm_conf:
+    os.makedirs("/etc/lightdm", exist_ok=True)
+    with open("/etc/lightdm/lightdm.conf", "w") as lightdm_conf:
         lightdm_conf.write(
-            f"""
-[SeatDefaults]
+            f"""[Seat:*]
 autologin-user={user_account}
 autologin-user-timeout=0
 user-session=ratpoison
