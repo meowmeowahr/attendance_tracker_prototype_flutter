@@ -681,7 +681,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Reset PIN'),
+        title: const Text('Reset Settings PIN'),
         content: Form(
           key: formKey,
           child: TextFormField(

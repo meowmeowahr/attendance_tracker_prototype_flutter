@@ -52,6 +52,7 @@ dependencies:
   logger: ^2.6.1
   android_intent_plus: ^6.0.0
   flutter_soloud: ^3.3.7
+  crypto: ^3.0.6
 
 dev_dependencies:
   flutter_test:

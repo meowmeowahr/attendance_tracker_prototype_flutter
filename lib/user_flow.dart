@@ -1,4 +1,5 @@
 import 'package:attendance_tracker/backend.dart';
+import 'package:attendance_tracker/passwords.dart';
 import 'package:attendance_tracker/settings.dart';
 import 'package:attendance_tracker/settings_page.dart';
 import 'package:flutter/material.dart';
@@ -30,12 +31,19 @@ class _UserFlowState extends State<UserFlow> {
   String _enteredPin = '';
   bool _isPinVerified = false;
   String? _selectedLocation;
+  bool _isSettingPin = false;
+  bool _isResettingPin = false;
+  String _newPin = '';
+  String _pinError = '';
 
   @override
   void initState() {
     super.initState();
     _selectedLocation = widget.allowedLocations?.first;
     _loadSettings();
+    if (widget.user.passwordHash == null) {
+      _isSettingPin = true;
+    }
   }
 
   Future<void> _loadSettings() async {
@@ -44,8 +52,116 @@ class _UserFlowState extends State<UserFlow> {
   }
 
   Future<bool> _verifyPin(String enteredPin) async {
-    final storedPin = _settingsManager.getValue<String>('security.pin') ?? '';
-    return storedPin.isEmpty || storedPin == enteredPin;
+    return widget.user.passwordHash == hashPin(enteredPin);
+  }
+
+  Widget _buildPinSetter(BuildContext context) {
+    return OrientationBuilder(
+      builder: (context, orientation) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Flex(
+            direction: orientation == Orientation.portrait
+                ? Axis.vertical
+                : Axis.horizontal,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _isResettingPin ? "Please Wait" : 'Set a 6-digit PIN',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  if (!_isResettingPin)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      6,
+                      (index) => Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: index < _newPin.length
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.surfaceContainerHigh,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (_pinError.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        _pinError,
+                        style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      ),
+                    ),
+                  if (_isResettingPin)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                ],
+              ),
+              SizedBox(
+                width: orientation == Orientation.portrait ? 0 : 32,
+                height: orientation == Orientation.portrait ? 32 : 0,
+              ),
+              if (!_isResettingPin)
+                PinKeypad(
+                  onKeyPressed: (key) async {
+                    if (_newPin.length < 6) {
+                      setState(() {
+                        _newPin += key;
+                        _pinError = '';
+                      });
+                      if (_newPin.length == 6) {
+                        setState(() {
+                          _isResettingPin = true;
+                        });
+                        try {
+                          await widget.backend.resetPassword(widget.user.id, _newPin);
+                          setState(() {
+                            _isSettingPin = false;
+                            _isResettingPin = false;
+                            _enteredPin = '';
+                            _pinError = '';
+                            _isPinVerified = true;
+                          });
+                        } catch (e) {
+                          setState(() {
+                            _pinError = 'Failed to set PIN. Please try again.';
+                            _newPin = '';
+                            _isResettingPin = false;
+                          });
+                        }
+                      }
+                    }
+                  },
+                  onClear: () {
+                    setState(() {
+                      _newPin = '';
+                      _pinError = '';
+                    });
+                  },
+                  onBackspace: () {
+                    if (_newPin.isNotEmpty) {
+                      setState(() {
+                        _newPin = _newPin.substring(0, _newPin.length - 1);
+                        _pinError = '';
+                      });
+                    }
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildPinEntry(BuildContext context) {
@@ -145,6 +261,16 @@ class _UserFlowState extends State<UserFlow> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isSettingPin) {
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+          foregroundColor: Theme.of(context).colorScheme.onSurface,
+          title: Text(widget.user.name),
+        ),
+        body: _buildPinSetter(context),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,

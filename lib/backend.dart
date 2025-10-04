@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:async/async.dart';
+import 'package:attendance_tracker/passwords.dart';
 import 'package:attendance_tracker/string_ext.dart';
 import 'package:attendance_tracker/util.dart';
 import 'package:flutter/material.dart';
@@ -23,18 +24,19 @@ class Member {
   final String name;
   final AttendanceStatus status;
   final String? location;
+  final String? passwordHash;
   final MemberPrivilege privilege;
   Member(
     this.id,
     this.name,
     this.status, {
-    this.location,
-    this.privilege = MemberPrivilege.student,
+      this.location, this.passwordHash,
+      this.privilege = MemberPrivilege.student,
   });
 
   @override
   String toString() {
-    return 'Member{id: $id, name: $name, status: $status, location: $location, privilege: $privilege}';
+    return 'Member{id: $id, name: $name, status: $status, location: $location, privilege: $privilege, passwordHash: $passwordHash}';
   }
 }
 
@@ -68,6 +70,12 @@ class ClockOutEvent extends TimeClockEvent {
   ClockOutEvent(super.memberId, super.time);
 }
 
+class PasswordResetEvent extends TimeClockEvent {
+  final String newHash;
+
+  PasswordResetEvent(super.memberId, super.time, this.newHash);
+}
+
 class TimeoutClient extends http.BaseClient {
   final http.Client _inner;
   final Duration timeout;
@@ -83,7 +91,7 @@ class TimeoutClient extends http.BaseClient {
 class AttendanceTrackerBackend {
   static const memberSheetName = "Members";
   static const logSheetName = "Log";
-  static const memberSheetContentsRange = "$memberSheetName!A3:E";
+  static const memberSheetContentsRange = "$memberSheetName!A3:F";
   static const memberSheetIdsRange = "$memberSheetName!A3:A";
   static const logSheetContentsRange = "$logSheetName!A3:";
   static const logSheetHeaderRange = "$logSheetName!A2:2";
@@ -108,6 +116,7 @@ class AttendanceTrackerBackend {
   final _clockInQueue = Queue<TimeClockEvent>();
   final _clockOutQueue = Queue<TimeClockEvent>();
   final _logQueue = Queue<MemberLogEntry>();
+  final _updatesQueue = Queue<TimeClockEvent>();
 
   // google connected flag
   // this must NOT become false on rate limit, null = not initialized
@@ -134,6 +143,8 @@ class AttendanceTrackerBackend {
 
     _clockInQueue.clear();
     _clockOutQueue.clear();
+    _logQueue.clear();
+    _updatesQueue.clear();
 
     attendance.value = [];
 
@@ -336,8 +347,8 @@ class AttendanceTrackerBackend {
     List<Member> newMembers = [];
     for (List<dynamic> googleMember in membersTableResponse.values!) {
       // ID, Name, Privilege, Status, Location
-      if (googleMember.length != 5) {
-        logger.w("Malformed user detected, skipping user addition");
+      if (googleMember.length != 5 && googleMember.length != 6) { // password fields may or may not be present
+        logger.w("Malformed user detected, skipping user addition, expected 5 or 6 fields, got ${googleMember.length}");
         continue;
       }
       newMembers.add(
@@ -348,6 +359,7 @@ class AttendanceTrackerBackend {
             (googleMember[3] as String).toLowerCase(),
           ),
           location: googleMember[4] as String,
+          passwordHash: googleMember.elementAtOrNull(5) as String?,
           privilege: MemberPrivilege.values.byName(
             (googleMember[2] as String).toLowerCase(),
           ),
@@ -363,15 +375,17 @@ class AttendanceTrackerBackend {
     }
 
     // these will be used in the log for full data
-    final frozedClockInQueue = _clockInQueue.toList();
-    final frozedClockOutQueue = _clockOutQueue.toList();
+    final frozenClockInQueue = _clockInQueue.toList();
+    final frozenClockOutQueue = _clockOutQueue.toList();
+    final frozenUpdatesQueue = _updatesQueue.toList();
     List<TimeClockEvent> timeClockEvents =
-        (frozedClockInQueue + frozedClockOutQueue)
+        (frozenClockInQueue + frozenClockOutQueue + frozenUpdatesQueue)
           ..sort((a, b) => a.time.compareTo(b.time));
 
     // these will be used in the member table for current data
     Map<int, List<AttendanceStatus>> userStatusUpdates = {};
     Map<int, String> userLocationUpdates = {};
+    Map<int, String> passwordHashUpdates = {};
 
     ValueRange? memberIdTableResponse;
     try {
@@ -406,7 +420,11 @@ class AttendanceTrackerBackend {
         logger.w(
           "Member ID ${event.memberId} not found in table, maybe the member list was remotely updated?",
         );
-        return;
+        continue;
+      }
+      if (event is PasswordResetEvent) {
+        passwordHashUpdates[event.memberId] = event.newHash;
+        continue;
       }
       userStatusUpdates.update(
         event.memberId,
@@ -478,6 +496,24 @@ class AttendanceTrackerBackend {
         }
       }
 
+      // Add password hash updates
+      for (final entry in passwordHashUpdates.entries) {
+        final memberId = entry.key;
+        final hash = entry.value;
+        final index = memberIds.indexOf(memberId);
+        if (index == -1) continue;
+        final row = index + 3;
+        final range = '${memberSheetContentsRange.split("!").first}!F$row';
+        updates.add(
+          ValueRange(
+            range: range,
+            values: [
+              [hash],
+            ],
+          ),
+        );
+      }
+
       final batchRequest = BatchUpdateValuesRequest(
         valueInputOption: 'USER_ENTERED', // preserve dropdown formatting
         data: updates,
@@ -502,10 +538,13 @@ class AttendanceTrackerBackend {
     }
 
     _clockInQueue.removeWhere(
-      (element) => frozedClockInQueue.contains(element),
+      (element) => frozenClockInQueue.contains(element),
     );
     _clockOutQueue.removeWhere(
-      (element) => frozedClockOutQueue.contains(element),
+      (element) => frozenClockOutQueue.contains(element),
+    );
+    _updatesQueue.removeWhere(
+      (element) => frozenUpdatesQueue.contains(element),
     );
   }
 
@@ -876,5 +915,14 @@ class AttendanceTrackerBackend {
       ]; // I think this is a bug in ValueNotifier
     }
     logger.d('Member with ID $memberId marked for clock in');
+  }
+
+  Future<void> resetPassword(int memberId, String passwordString) async {
+    String hash = hashPin(passwordString);
+    final event = PasswordResetEvent(memberId, DateTime.now(), hash);
+    _updatesQueue.add(event);
+    while (_updatesQueue.contains(event)) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
   }
 }
