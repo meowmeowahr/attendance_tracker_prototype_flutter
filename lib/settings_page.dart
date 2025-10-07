@@ -865,25 +865,41 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _exportSettings(BuildContext context) async {
     try {
       final json = await _settingsManager.exportToJson();
-      final result = await FilePicker.platform.saveFile(
+
+      // Show save dialog
+      final path = await FilePicker.platform.saveFile(
         dialogTitle: 'Save Settings',
         fileName: 'settings.json',
-        bytes: Uint8List.fromList(json.codeUnits),
       );
-      if (result != null) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Settings exported successfully')),
+
+      if (path == null) return; // user cancelled
+
+      // On web, FilePicker can handle bytes directly
+      if (kIsWeb) {
+        await FilePicker.platform.saveFile(
+          dialogTitle: 'Save Settings',
+          fileName: 'settings.json',
+          bytes: Uint8List.fromList(json.codeUnits),
         );
+      } else {
+        // On desktop/mobile, manually write to the selected path
+        final file = File(path);
+        await file.writeAsString(json);
       }
-    } catch (e) {
-      widget.logger.e("Failed to export settings $e");
+
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to export settings $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Settings exported successfully')),
+      );
+    } catch (e, st) {
+      widget.logger.e("Failed to export settings $e\n$st");
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to export settings: $e')),
+      );
     }
   }
+
 
   Future<void> _importSettings(BuildContext context) async {
     try {
