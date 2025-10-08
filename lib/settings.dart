@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:ffi';
 
 import 'package:attendance_tracker/image_util.dart';
+import 'package:attendance_tracker/util.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,6 +32,7 @@ class SettingsManager {
   SharedPreferences? prefs;
 
   Map<String, dynamic> _defaultSettings = {};
+  Map<String, Type> _developerOptions = {};
 
   SettingsManager._privateConstructor();
   static final SettingsManager _instance =
@@ -64,7 +67,15 @@ class SettingsManager {
       'rfid.hid.eol': 'RETURN',
       'rfid.hid.format': 'decAscii',
     };
+
+    _developerOptions = {
+      'rfid.hid.timeout': double,
+      'rfid.hid.eol': String,
+      'rfid.hid.format': DataFormat,
+    };
   }
+
+  Map<String, Type> get developerOptions => _developerOptions;
 
   T? getDefault<T>(String key) {
     if (_defaultSettings.containsKey(key)) {
