@@ -41,7 +41,7 @@ class _UserFlowState extends State<UserFlow> {
     super.initState();
     _selectedLocation = widget.allowedLocations?.first;
     _loadSettings();
-    if (widget.user.passwordHash == null) {
+    if (widget.user.passwordHash == null && widget.user.privilege != MemberPrivilege.student) {
       _isSettingPin = true;
     }
   }
