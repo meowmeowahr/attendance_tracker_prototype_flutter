@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 
+import 'dev_opts_page.dart';
+
 class PinKeypad extends StatelessWidget {
   final Function(String) onKeyPressed;
   final Function() onClear;
@@ -761,92 +763,6 @@ class _SettingsPageState extends State<SettingsPage> {
                       });
                     },
                   ),
-
-                  if ((_settingsManager.getValue<String>("rfid.reader") ??
-                          _settingsManager.getDefault<String>(
-                            "rfid.reader",
-                          )!) ==
-                      "hid")
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(height: 12.0),
-                        Text(
-                          "Timeout (seconds):",
-                          textAlign: TextAlign.left,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        DoubleSpinBox(
-                          initialValue:
-                              _settingsManager.getValue<double>(
-                                "rfid.hid.timeout",
-                              ) ??
-                              _settingsManager.getDefault<double>(
-                                "rfid.hid.timeout",
-                              )!,
-                          min: 0.1,
-                          max: 3.0,
-                          step: 0.1,
-                          onChanged: (newTimeout) {
-                            _settingsManager.setValue(
-                              "rfid.hid.timeout",
-                              newTimeout,
-                            );
-                          },
-                        ),
-                        SizedBox(height: 8.0),
-                        DropdownButtonFormField(
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(),
-                            label: Text("End-of-Input Character"),
-                          ),
-                          items: ["NONE", "RETURN", "SPACE"]
-                              .map(
-                                (eol) => DropdownMenuItem<String>(
-                                  value: eol,
-                                  child: Text(eol),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (newEOL) {
-                            _settingsManager.setValue("rfid.hid.eol", newEOL);
-                          },
-                          initialValue:
-                              _settingsManager.getValue<String>(
-                                "rfid.hid.eol",
-                              ) ??
-                              _settingsManager.getDefault<String>(
-                                "rfid.hid.eol",
-                              )!,
-                        ),
-                        SizedBox(height: 8.0),
-                        DropdownButtonFormField(
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(),
-                            label: Text("Data Format"),
-                          ),
-                          items: DataFormat.values.map((style) {
-                            return DropdownMenuItem<String>(
-                              value: style.toString().split('.').last,
-                              child: Text(style.toString().split('.').last),
-                            );
-                          }).toList(),
-                          onChanged: (newCsum) {
-                            _settingsManager.setValue(
-                              "rfid.hid.format",
-                              newCsum,
-                            );
-                          },
-                          initialValue:
-                              _settingsManager.getValue<String>(
-                                "rfid.hid.format",
-                              ) ??
-                              _settingsManager.getDefault<String>(
-                                "rfid.hid.format",
-                              )!,
-                        ),
-                      ],
-                    ),
                 ],
               ),
             ),
@@ -865,29 +781,46 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _exportSettings(BuildContext context) async {
     try {
       final json = await _settingsManager.exportToJson();
-      final result = await FilePicker.platform.saveFile(
+
+      // Show save dialog
+      final path = await FilePicker.platform.saveFile(
         dialogTitle: 'Save Settings',
         fileName: 'settings.json',
-        bytes: Uint8List.fromList(json.codeUnits),
       );
-      if (result != null) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Settings exported successfully')),
+
+      if (path == null) return; // user cancelled
+
+      // On web, FilePicker can handle bytes directly
+      if (kIsWeb) {
+        await FilePicker.platform.saveFile(
+          dialogTitle: 'Save Settings',
+          fileName: 'settings.json',
+          bytes: Uint8List.fromList(json.codeUnits),
         );
+      } else {
+        // On desktop/mobile, manually write to the selected path
+        final file = File(path);
+        await file.writeAsString(json);
       }
-    } catch (e) {
-      widget.logger.e("Failed to export settings $e");
+
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to export settings $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Settings exported successfully')),
+      );
+    } catch (e, st) {
+      widget.logger.e("Failed to export settings $e\n$st");
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to export settings: $e')),
+      );
     }
   }
+
 
   Future<void> _importSettings(BuildContext context) async {
     try {
       final result = await FilePicker.platform.pickFiles(
+        dialogTitle: "Choose Settings File",
         type: FileType.custom,
         allowedExtensions: ['json'],
         withData: true, // important for web
@@ -1147,6 +1080,48 @@ class _SettingsPageState extends State<SettingsPage> {
                       trailing: IconButton(
                         onPressed: () => _importSettings(context),
                         icon: const Icon(Icons.upload_file),
+                      ),
+                    ),
+                    ListTile(
+                      tileColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerLow,
+                      title: const Text("Developer Options"),
+                      subtitle: const Text("Not recommended for most users"),
+                      leading: const Icon(Icons.developer_mode),
+                      trailing: IconButton(
+                        onPressed: () {
+                          showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                icon: Icon(Icons.warning_rounded, size: 128,),
+                                title: const Text('Warning'),
+                                content: const Text(
+                                  'Using developer options may cause unexpected behavior, and is not supported. Proceed with caution.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(onPressed: () {
+                                    Navigator.pop(context);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            DeveloperOptionsPage(
+                                              settingsManager: _settingsManager,
+                                              logger: widget.logger,
+                                            ),
+                                      ),
+                                    );
+                                  }, child: Text("I Understand"))
+                                ],
+                              ));
+                        },
+
+                        icon: const Icon(Icons.arrow_forward),
                       ),
                     ),
                   ],
