@@ -491,44 +491,155 @@ class _HomePageState extends State<HomePage>
     return [
       // logo
       if (!controls)
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Spacer(),
-                ValueListenableBuilder(
-                  valueListenable: _homeScreenImage,
-                  builder: (context, image, widget) {
-                    return Image.memory(
-                      image,
-                      width: iconSize,
-                      fit: BoxFit.fill,
-                    );
-                  },
-                ),
-                Spacer(),
-                Card.filled(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ValueListenableBuilder(
-                      valueListenable: _homeScreenState,
-                      builder: (context, value, child) {
-                        return Row(
-                          children: [
-                            Icon(Icons.circle, color: value.color, size: 18),
-                            SizedBox(width: 8),
-                            Text(value.description),
-                          ],
-                        );
-                      },
+        Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            children: [
+              if (!controls)
+                Row(
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Spacer(),
+                    Center(
+                      child: ValueListenableBuilder(
+                        valueListenable: _now,
+                        builder: (context, value, child) {
+                          final timeString = DateFormat(
+                            'hh:mm:ss a',
+                          ).format(_now.value);
+                          final dateString = DateFormat(
+                            'MMMM d, yyyy',
+                          ).format(_now.value);
+                          return Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                dateString,
+                                style: theme.textTheme.titleMedium,
+                              ),
+                              Text(
+                                timeString,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
                     ),
+                    Spacer(flex: 2,),
+                    PopupMenuButton<String>(
+                      icon: Icon(Icons.more_vert),
+                      tooltip: "",
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'settings',
+                          child: Text('Settings'),
+                          onTap: () {
+                            rfidScanInActive = false;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SettingsPage(
+                                  widget.themeController,
+                                  widget.logger,
+                                ),
+                              ),
+                            ).then((_) {
+                              // navigate back
+                              rfidScanInActive = true;
+                              setState(() {
+                                _homeScreenImage.value = base64.decode(
+                                  widget.settingsManager.getValue<String>(
+                                    "app.theme.logo",
+                                  ) ??
+                                      widget.settingsManager
+                                          .getDefault<String>(
+                                        "app.theme.logo",
+                                      )!,
+                                );
+                              });
+
+                              // backend
+                              _backend.initialize(
+                                widget.settingsManager.getValue<String>(
+                                  'google.sheet_id',
+                                ) ??
+                                    '',
+                                widget.settingsManager.getValue<String>(
+                                  'google.oauth_credentials',
+                                ) ??
+                                    '{}',
+                              );
+                            });
+                          },
+                        ),
+                        PopupMenuItem(
+                          value: 'logger',
+                          child: Text('App Logs'),
+                          onTap: () {
+                            rfidScanInActive = false;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LoggerView(
+                                  settings: widget.settingsManager,
+                                ),
+                              ),
+                            ).then((_) {
+                              rfidScanInActive = true;
+                            });
+                          },
+                        ),
+                        PopupMenuItem(
+                          value: 'about',
+                          child: Text('About'),
+                          onTap: () {
+                            showAboutDialog(
+                              context: context,
+                              applicationName: 'Attendance Tracker',
+                              applicationVersion: '1.0.0',
+                              applicationIcon: FlutterLogo(size: 64),
+                              children: [],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              Spacer(),
+              ValueListenableBuilder(
+                valueListenable: _homeScreenImage,
+                builder: (context, image, widget) {
+                  return Image.memory(
+                    image,
+                    width: iconSize,
+                    fit: BoxFit.fill,
+                  );
+                },
+              ),
+              Spacer(),
+              Card.filled(
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ValueListenableBuilder(
+                    valueListenable: _homeScreenState,
+                    builder: (context, value, child) {
+                      return Row(
+                        children: [
+                          Icon(Icons.circle, color: value.color, size: 18),
+                          SizedBox(width: 8),
+                          Text(value.description),
+                        ],
+                      );
+                    },
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         )
       else
@@ -840,129 +951,20 @@ class _HomePageState extends State<HomePage>
           return Scaffold(
             body: Column(
               children: [
-                if (orientation == Orientation.landscape)
-                  Container(
-                    color: theme.colorScheme.surfaceContainerHigh,
-                    height: 60,
-                    child: Row(
-                      children: [
-                        Spacer(),
-                        Center(
-                          child: ValueListenableBuilder(
-                            valueListenable: _now,
-                            builder: (context, value, child) {
-                              final timeString = DateFormat(
-                                'hh:mm:ss a',
-                              ).format(_now.value);
-                              final dateString = DateFormat(
-                                'MMMM d, yyyy',
-                              ).format(_now.value);
-                              return Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    dateString,
-                                    style: theme.textTheme.titleMedium,
-                                  ),
-                                  Text(
-                                    timeString,
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      fontFamily: 'monospace',
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                        Spacer(),
-                        PopupMenuButton<String>(
-                          icon: Icon(Icons.more_vert),
-                          tooltip: "",
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'settings',
-                              child: Text('Settings'),
-                              onTap: () {
-                                rfidScanInActive = false;
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => SettingsPage(
-                                      widget.themeController,
-                                      widget.logger,
-                                    ),
-                                  ),
-                                ).then((_) {
-                                  // navigate back
-                                  rfidScanInActive = true;
-                                  setState(() {
-                                    _homeScreenImage.value = base64.decode(
-                                      widget.settingsManager.getValue<String>(
-                                            "app.theme.logo",
-                                          ) ??
-                                          widget.settingsManager
-                                              .getDefault<String>(
-                                                "app.theme.logo",
-                                              )!,
-                                    );
-                                  });
-
-                                  // backend
-                                  _backend.initialize(
-                                    widget.settingsManager.getValue<String>(
-                                          'google.sheet_id',
-                                        ) ??
-                                        '',
-                                    widget.settingsManager.getValue<String>(
-                                          'google.oauth_credentials',
-                                        ) ??
-                                        '{}',
-                                  );
-                                });
-                              },
-                            ),
-                            PopupMenuItem(
-                              value: 'logger',
-                              child: Text('App Logs'),
-                              onTap: () {
-                                rfidScanInActive = false;
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => LoggerView(
-                                      settings: widget.settingsManager,
-                                    ),
-                                  ),
-                                ).then((_) {
-                                  rfidScanInActive = true;
-                                });
-                              },
-                            ),
-                            PopupMenuItem(
-                              value: 'about',
-                              child: Text('About'),
-                              onTap: () {
-                                showAboutDialog(
-                                  context: context,
-                                  applicationName: 'Attendance Tracker',
-                                  applicationVersion: '1.0.0',
-                                  applicationIcon: FlutterLogo(size: 64),
-                                  children: [],
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                        SizedBox(width: 8),
-                      ],
-                    ),
-                  ),
                 Expanded(
                   child: OrientationBuilder(
                     builder: (BuildContext context, Orientation orientation) {
                       if (orientation == Orientation.landscape) {
-                        return Row(children: _buildContentSections(240, false));
+                        final sections = _buildContentSections(240, false);
+                        return Row(children: [
+                          SizedBox(width: 300, child: sections[0]),
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              children: sections.sublist(1),
+                            ),
+                          ),
+                        ]);
                       } else {
                         return Column(
                           children: _buildContentSections(120, true),
