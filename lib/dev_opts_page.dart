@@ -21,7 +21,16 @@ class _DeveloperOptionsPageState extends State<DeveloperOptionsPage> {
       appBar: AppBar(
         title: const Text('Developer Options'),
       ),
-      body: ListView.builder(itemCount: widget.settingsManager.developerOptions.length, itemBuilder: (context, index) {
+      body: ListView.builder(itemCount: widget.settingsManager.developerOptions.length + 1, itemBuilder: (context, index) {
+        if (index == 0) {
+          return ListTile(
+            tileColor: Theme.of(context).colorScheme.errorContainer,
+            leading: Icon(Icons.info, color: Theme.of(context).colorScheme.error,),
+            title: Text('Warning'),
+            subtitle: Text('Changing these settings may cause unexpected behavior. Proceed with caution! A restart may be required for changes to take effect.'),
+          );
+        }
+        index--;
         return ListTile(
           minTileHeight: 64,
           leading: Icon(Icons.settings),
