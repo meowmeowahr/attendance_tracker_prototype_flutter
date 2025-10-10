@@ -14,7 +14,7 @@ permissions:
   id-token: write
 
 env:
-  FLUTTER_VERSION: '3.24.3'
+  FLUTTER_VERSION: '3.x'
 
 jobs:
   build:
