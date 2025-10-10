@@ -1,0 +1,72 @@
+name: Build & Deploy Flutter Web Versions
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'  # e.g., v1.0.0
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+env:
+  FLUTTER_VERSION: '3.24.3'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # needed to get tags for launcher generation
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Determine version
+        id: version
+        run: |
+          # Extract version from tag (e.g., v1.0.0 -> 1.0.0)
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VER="${GITHUB_REF#refs/tags/v}"
+          else
+            VER=$(grep 'version:' pubspec.yaml | head -1 | awk '{print $2}')
+          fi
+          echo "version=$VER" >> $GITHUB_OUTPUT
+          echo "Building version: $VER"
+
+      - name: Build Flutter web
+        run: flutter build web --release --base-href "/${{ steps.version.outputs.version }}/"
+
+      - name: Prepare deploy folder
+        run: |
+          mkdir -p deploy/${{ steps.version.outputs.version }}
+          cp -r build/web/* deploy/${{ steps.version.outputs.version }}/
+
+          # Copy to /latest for convenience
+          rm -rf deploy/latest
+          cp -r build/web deploy/latest
+
+      - name: Generate launcher
+        run: |
+          # Collect version folders
+          versions=$(ls deploy | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V)
+          echo "Versions detected: $versions"
+          python3 web/launcher/generate.py -o deploy/index.html $versions
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: deploy
