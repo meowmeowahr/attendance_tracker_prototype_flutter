@@ -39,7 +39,7 @@ jobs:
         run: |
           # Extract version from tag (e.g., v1.0.0 -> 1.0.0)
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            VER="${GITHUB_REF#refs/tags/v}"
+            VER="${GITHUB_REF#refs/tags/}"
           else
             VER=$(grep 'version:' pubspec.yaml | head -1 | awk '{print $2}')
           fi
@@ -47,7 +47,7 @@ jobs:
           echo "Building version: $VER"
 
       - name: Build Flutter web
-        run: flutter build web --release --base-href "/${{ steps.version.outputs.version }}/"
+        run: flutter build web --release --base-href "/attendance_tracker_prototype_flutter/${{ steps.version.outputs.version }}/"
 
       - name: Prepare deploy folder
         run: |
