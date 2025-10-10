@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 
 class DeveloperOptionsPage extends StatefulWidget {
-  DeveloperOptionsPage({super.key, required this.settingsManager, required this.logger});
+  const DeveloperOptionsPage({super.key, required this.settingsManager, required this.logger});
 
   final SettingsManager settingsManager;
   final Logger logger;

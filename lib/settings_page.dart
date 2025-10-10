@@ -2,11 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:attendance_tracker/android_lockdown.dart';
-import 'package:attendance_tracker/image_util.dart';
 import 'package:attendance_tracker/settings.dart';
 import 'package:attendance_tracker/string_ext.dart';
-import 'package:attendance_tracker/util.dart';
-import 'package:attendance_tracker/widgets.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
