@@ -49,6 +49,28 @@ class _DeveloperOptionsPageState extends State<DeveloperOptionsPage> {
                 },
               ),
             ),
+            int => SizedBox(
+              width: 180,
+              child: TextFormField(
+                initialValue: widget.settingsManager.getValue<int>(widget.settingsManager.developerOptions.keys.elementAt(index)).toString(),
+                keyboardType: TextInputType.numberWithOptions(decimal: false),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*')),
+                ],
+                decoration: const InputDecoration(
+                  labelText: 'Value',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  final doubleValue = int.tryParse(value);
+                  if (doubleValue != null) {
+                    setState(() {
+                      widget.settingsManager.setValue(widget.settingsManager.developerOptions.keys.elementAt(index), doubleValue);
+                    });
+                  }
+                },
+              ),
+            ),
             String => SizedBox(
               width: 180,
               child: TextFormField(
@@ -67,7 +89,7 @@ class _DeveloperOptionsPageState extends State<DeveloperOptionsPage> {
             DataFormat => SizedBox(
               width: 180,
               child: DropdownButtonFormField<String>(
-                value: widget.settingsManager.getValue<String>(widget.settingsManager.developerOptions.keys.elementAt(index)),
+                initialValue: widget.settingsManager.getValue<String>(widget.settingsManager.developerOptions.keys.elementAt(index)),
                 items: DataFormat.values.map((format) {
                   return DropdownMenuItem<String>(
                     value: format.toString().split('.').last,
