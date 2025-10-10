@@ -553,24 +553,25 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _editStationLocation(BuildContext context) async {
     bool isFixed =
-        _settingsManager.getValue<bool>("station.fixed") ??
-        false; // Default value for fixed station
+        _settingsManager.getValue<bool>("station.fixed") ?? false;
     final locationController = TextEditingController(
       text: _settingsManager.getValue<String>("station.location") ?? "",
-    ); // For fixed location
-    final newLocationController =
-        TextEditingController(); // For adding new non-fixed locations
+    );
+    final newLocationController = TextEditingController();
     List<String> locations =
-        _settingsManager.getValue<List<String>>("station.locations") ??
-        ["Shop"]; // List for non-fixed locations
+        _settingsManager.getValue<List<String>>("station.locations") ?? ["Shop"];
 
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Station Settings'),
         content: StatefulBuilder(
-          builder: (context, setState) => SingleChildScrollView(
+          builder: (context, setState) => SizedBox(
+            width: 400,
+            // Use a constrained box instead of SingleChildScrollView
+            // so the ReorderableListView can scroll properly
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 CheckboxListTile(
                   title: const Text('Fixed Station'),
@@ -582,6 +583,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     });
                   },
                 ),
+
                 if (isFixed)
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0),
@@ -601,21 +603,40 @@ class _SettingsPageState extends State<SettingsPage> {
                     'Mobile Station Locations',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  ...locations.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final location = entry.value;
-                    return ListTile(
-                      title: Text(location),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () {
-                          setState(() {
-                            locations.removeAt(index);
-                          });
-                        },
-                      ),
-                    );
-                  }),
+                  const SizedBox(height: 8),
+
+                  // Reorderable list area
+                  Flexible(
+                    child: ReorderableListView.builder(
+                      shrinkWrap: true,
+                      physics: const ClampingScrollPhysics(),
+                      itemCount: locations.length,
+                      onReorder: (oldIndex, newIndex) {
+                        setState(() {
+                          if (newIndex > oldIndex) newIndex -= 1;
+                          final item = locations.removeAt(oldIndex);
+                          locations.insert(newIndex, item);
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        final location = locations[index];
+                        return ListTile(
+                          key: ValueKey(location),
+                          title: Text(location),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () {
+                              setState(() {
+                                locations.removeAt(index);
+                              });
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // Add new location input
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: Row(
@@ -673,6 +694,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
+
 
   Future<void> _resetPin(BuildContext context) async {
     final formKey = GlobalKey<FormState>();
