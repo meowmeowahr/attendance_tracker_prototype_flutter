@@ -61,7 +61,7 @@ jobs:
       - name: Generate launcher
         run: |
           # Collect version folders
-          versions=$(ls deploy/refs/tags | sort -V)
+          versions=$(ls deploy | sort -V)
           echo "Versions detected: $versions"
           python3 web/launcher/generate.py -r /attendance_tracker_prototype_flutter/ -o deploy/index.html $versions
 
