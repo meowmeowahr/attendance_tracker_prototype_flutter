@@ -61,9 +61,9 @@ jobs:
       - name: Generate launcher
         run: |
           # Collect version folders
-          versions=$(ls deploy | sort -V)
+          versions=$(ls deploy/refs/tags | sort -V)
           echo "Versions detected: $versions"
-          python3 web/launcher/generate.py -o deploy/index.html $versions
+          python3 web/launcher/generate.py -r /attendance_tracker_prototype_flutter/ -o deploy/index.html $versions
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
