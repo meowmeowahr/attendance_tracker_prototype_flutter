@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ffi';
 
 import 'package:attendance_tracker/image_util.dart';
 import 'package:attendance_tracker/util.dart';
@@ -66,12 +65,18 @@ class SettingsManager {
       'rfid.hid.timeout': 0.2,
       'rfid.hid.eol': 'RETURN',
       'rfid.hid.format': 'decAscii',
+      'backend.interval.memberPolling': 20,
+      'backend.interval.statusPush': 10,
+      'backend.interval.logPush': 20,
     };
 
     _developerOptions = {
       'rfid.hid.timeout': double,
       'rfid.hid.eol': String,
       'rfid.hid.format': DataFormat,
+      'backend.interval.memberPolling': int,
+      'backend.interval.statusPush': int,
+      'backend.interval.logPush': int,
     };
   }
 
