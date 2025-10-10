@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import List
 
 
-def generate_html(versions: List[str]) -> str:
+def generate_html(versions: List[str], root: str) -> str:
     """Generate the HTML content for the launcher page using the template."""
     
     # Sort versions in descending order (newest first)
@@ -31,8 +31,8 @@ def generate_html(versions: List[str]) -> str:
     
     # Replace the VERSION_LIST placeholder with the actual versions
     version_list_str = ', '.join([f'"{version}"' for version in sorted_versions])
-    html_content = template_content.replace('VERSION_LIST_PLACEHOLDER', version_list_str)
-    
+    html_content = template_content.replace('VERSION_LIST_PLACEHOLDER', version_list_str).replace('ROOT_PTH', root)
+
     return html_content
 
 
@@ -43,8 +43,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-    python3 generate.py -o launcher.html 0.1.0 0.1.1 0.2.0 0.3.0
-    python3 generate.py --output /path/to/output.html 1.0.0 1.1.0 2.0.0
+    python3 generate.py -r /attendance_tracker_prototype_flutter/ -o launcher.html 0.1.0 0.1.1 0.2.0 0.3.0
+    python3 generate.py --root /attendance_tracker_prototype_flutter/ --output /path/to/output.html 1.0.0 1.1.0 2.0.0
         """
     )
     
@@ -52,6 +52,12 @@ Examples:
         '-o', '--output',
         required=True,
         help='Output HTML file path'
+    )
+
+    parser.add_argument(
+        '-r', '--root',
+        default='/',
+        help='Root URL path for the versions'
     )
     
     parser.add_argument(
@@ -69,7 +75,7 @@ Examples:
     
     try:
         # Generate HTML content
-        html_content = generate_html(args.versions)
+        html_content = generate_html(args.versions, args.root)
         
         # Write to output file
         output_path = Path(args.output)
