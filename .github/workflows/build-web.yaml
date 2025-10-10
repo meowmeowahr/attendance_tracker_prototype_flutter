@@ -61,7 +61,7 @@ jobs:
       - name: Generate launcher
         run: |
           # Collect version folders
-          versions=$(ls deploy | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V)
+          versions=$(ls deploy | sort -V)
           echo "Versions detected: $versions"
           python3 web/launcher/generate.py -o deploy/index.html $versions
 
