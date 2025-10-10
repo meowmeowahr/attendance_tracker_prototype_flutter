@@ -26,7 +26,7 @@ class RfidTapCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Tap your badge to clock in/out",
+                  "Scan your badge to clock in/out",
                   style: theme.textTheme.bodyLarge,
                 ),
                 Text(
