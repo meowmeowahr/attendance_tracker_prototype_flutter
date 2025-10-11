@@ -19,6 +19,7 @@ def generate_html(versions: List[str], root: str) -> str:
     """Generate the HTML content for the launcher page using the template."""
     
     # Sort versions in descending order (newest first)
+    versions.remove("latest") if "latest" in versions else None
     sorted_versions = sorted(versions, reverse=True)
     
     # Read the template file
