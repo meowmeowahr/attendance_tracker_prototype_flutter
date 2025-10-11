@@ -330,7 +330,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 if (!context.mounted) return;
                 Navigator.pop(context);
               } catch (e) {
-                print(e);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Invalid JSON file')),
