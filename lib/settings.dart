@@ -21,6 +21,7 @@ class ThemeController {
       'blue': Colors.blue,
       'yellow': Colors.yellow,
       'orange': Colors.orange,
+      'purple': Colors.purpleAccent[100],
     };
     accentColor.value = colorMap[name] ?? Colors.blue;
   }

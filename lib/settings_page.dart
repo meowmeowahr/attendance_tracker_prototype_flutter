@@ -368,6 +368,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 16),
             SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
                   ElevatedButton(
@@ -385,6 +386,44 @@ class _SettingsPageState extends State<SettingsPage> {
                       backgroundColor: Colors.red,
                     ),
                     child: _currentAccentColor == "red"
+                        ? Icon(Icons.check, color: Colors.black)
+                        : Icon(Icons.circle, color: Colors.transparent),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() => _currentAccentColor = "orange");
+                      _settingsManager.setValue('app.theme.accent', "orange");
+                      widget.themeController.updateAccent("orange");
+                    },
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(64, 64),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 19,
+                        vertical: 8,
+                      ),
+                      backgroundColor: Colors.orange,
+                    ),
+                    child: _currentAccentColor == "orange"
+                        ? Icon(Icons.check, color: Colors.black)
+                        : Icon(Icons.circle, color: Colors.transparent),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() => _currentAccentColor = "yellow");
+                      _settingsManager.setValue('app.theme.accent', "yellow");
+                      widget.themeController.updateAccent("yellow");
+                    },
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(64, 64),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 19,
+                        vertical: 8,
+                      ),
+                      backgroundColor: Colors.yellow,
+                    ),
+                    child: _currentAccentColor == "yellow"
                         ? Icon(Icons.check, color: Colors.black)
                         : Icon(Icons.circle, color: Colors.transparent),
                   ),
@@ -429,9 +468,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: () {
-                      setState(() => _currentAccentColor = "yellow");
-                      _settingsManager.setValue('app.theme.accent', "yellow");
-                      widget.themeController.updateAccent("yellow");
+                      setState(() => _currentAccentColor = "purple");
+                      _settingsManager.setValue('app.theme.accent', "purple");
+                      widget.themeController.updateAccent("purple");
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(64, 64),
@@ -439,28 +478,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         horizontal: 19,
                         vertical: 8,
                       ),
-                      backgroundColor: Colors.yellow,
+                      backgroundColor: Colors.purple,
                     ),
-                    child: _currentAccentColor == "yellow"
-                        ? Icon(Icons.check, color: Colors.black)
-                        : Icon(Icons.circle, color: Colors.transparent),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() => _currentAccentColor = "orange");
-                      _settingsManager.setValue('app.theme.accent', "orange");
-                      widget.themeController.updateAccent("orange");
-                    },
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(64, 64),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 19,
-                        vertical: 8,
-                      ),
-                      backgroundColor: Colors.orange,
-                    ),
-                    child: _currentAccentColor == "orange"
+                    child: _currentAccentColor == "purple"
                         ? Icon(Icons.check, color: Colors.black)
                         : Icon(Icons.circle, color: Colors.transparent),
                   ),

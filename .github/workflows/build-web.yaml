@@ -5,7 +5,7 @@ on:
     branches:
       - main
     tags:
-      - '*'
+      - 'v*'
   workflow_dispatch:
 
 permissions:
@@ -37,12 +37,7 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          # Extract version from tag (e.g., v1.0.0 -> 1.0.0)
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            VER="${GITHUB_REF#refs/tags/}"
-          else
-            VER=$(grep 'version:' pubspec.yaml | head -1 | awk '{print $2}')
-          fi
+          VER=$(grep 'version:' pubspec.yaml | head -1 | awk '{print $2}')
           echo "version=$VER" >> $GITHUB_OUTPUT
           echo "Building version: $VER"
 

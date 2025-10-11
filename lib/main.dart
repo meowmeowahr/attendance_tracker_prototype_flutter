@@ -77,7 +77,7 @@ class _MyAppState extends State<MyApp> {
           builder: (context, value, child) {
             final adjustedColor = HSVColor.fromColor(
               value,
-            ).withSaturation(0.6).toColor();
+            ).withSaturation(0.52).toColor();
 
             final darkColorScheme = ColorScheme.fromSeed(
               seedColor: adjustedColor,
