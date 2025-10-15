@@ -430,7 +430,7 @@ class _UserFlowState extends State<UserFlow> {
                         },
                       );
                       } else {
-                        return SizedBox(height: 0);
+                        return SizedBox(height: 4);
                       }
                     }
                   )
