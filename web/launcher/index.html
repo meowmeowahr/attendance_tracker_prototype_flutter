@@ -2,141 +2,57 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>App Launcher - Select Version</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            background: #1a1a1a;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-        }
-        .container {
-            background: #2d2d2d;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            max-width: 500px;
-            width: 90%;
-            border: 1px solid #404040;
-        }
-        h1 {
-            margin: 0 0 1rem 0;
-            color: #ffffff;
-            font-size: 2rem;
-            font-weight: 600;
-        }
-        .subtitle {
-            color: #b3b3b3;
-            margin-bottom: 2rem;
-            font-size: 1.1rem;
-        }
-        .version-list {
-            margin-bottom: 2rem;
-        }
-        .version-item {
-            display: block;
-            padding: 12px 16px;
-            margin-bottom: 8px;
-            background: #404040;
-            color: #ffffff;
-            text-decoration: none;
-            border-radius: 8px;
-            border: 1px solid #555555;
-            transition: all 0.2s ease;
-            font-size: 1rem;
-            text-align: center;
-            cursor: pointer;
-        }
-        .version-item:hover {
-            background: #505050;
-            border-color: #666666;
-            transform: translateY(-1px);
-        }
-        .version-item:last-child {
-            margin-bottom: 0;
-        }
-        .latest-badge {
-            display: inline-block;
-            background: #007acc;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-left: 8px;
-        }
-        .version-info {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background: #333333;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            color: #b3b3b3;
-            border: 1px solid #404040;
-        }
-    </style>
 </head>
 <body>
-    <noscript>
-        <div class="container">
-            <h1>JavaScript Required</h1>
-            <p class="subtitle">This application requires JavaScript to function properly. Please enable JavaScript in your browser settings and reload the page.</p>
-        </div>
-    </noscript>
-    <div class="container">
-        <h1>Attendance Tracker Versions</h1>
-        <p class="subtitle">Select a version to launch</p>
-        
-        <div class="version-list" id="versionList">
-            <!-- ... -->
-        </div>
-        
-        <div class="version-info">
-            <strong>Available Versions:</strong> <span id="versionInfo"></span>
-        </div>
+<noscript>
+    <div>
+        <h1>JavaScript Required</h1>
+        <p>This application requires JavaScript to function properly. Please enable JavaScript in your browser and reload the page.</p>
+    </div>
+</noscript>
+
+<div>
+    <h1>Attendance Tracker Versions</h1>
+    <p>Select a version to launch</p>
+
+    <div id="versionList">
+        <!-- version links will go here -->
     </div>
 
-    <script>
-        const versions = [VERSION_LIST_PLACEHOLDER];
-        
-        function createVersionItem(version) {
-            const item = document.createElement('a');
-            item.href = "ROOT_PTH" + version;
-            item.className = 'version-item';
-            item.textContent = version;
+    <div>
+        <strong>Available Versions:</strong> <span id="versionInfo"></span>
+    </div>
+</div>
 
-            return item;
-        }
-        
-        function populateVersionList() {
-            const versionList = document.getElementById('versionList');
-            const versionInfo = document.getElementById('versionInfo');
-            
-            // Clear existing items
-            versionList.innerHTML = '';
-            
-            // Create version items
-            const versionItem = createVersionItem("latest");
-            versionList.appendChild(versionItem);
-            versions.forEach((version, index) => {
-                const versionItem = createVersionItem(version);
-                versionList.appendChild(versionItem);
-            });
-            
-            // Update version info
-            versionInfo.textContent = versions.join(', ');
-        }
-        
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', populateVersionList);
-    </script>
+<script>
+    const versions = [VERSION_LIST_PLACEHOLDER];
+
+    function createVersionItem(version) {
+      const a = document.createElement('a');
+      a.href = "ROOT_PTH" + version;
+      a.textContent = version;
+      return a;
+    }
+
+    function populateVersionList() {
+      const versionList = document.getElementById('versionList');
+      const versionInfo = document.getElementById('versionInfo');
+
+      versionList.innerHTML = '';
+
+      // Add "latest"
+      versionList.appendChild(createVersionItem("latest"));
+
+      versions.forEach(version => {
+        versionList.appendChild(createVersionItem(version));
+      });
+
+      versionInfo.textContent = versions.join(', ');
+    }
+
+    document.addEventListener('DOMContentLoaded', populateVersionList);
+</script>
 </body>
 </html>
