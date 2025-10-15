@@ -35,6 +35,7 @@ class _UserFlowState extends State<UserFlow> {
   bool _isResettingPin = false;
   String _newPin = '';
   String _pinError = '';
+  ValueNotifier<bool> isTimerRunning = ValueNotifier(true);
 
   @override
   void initState() {
@@ -284,126 +285,158 @@ class _UserFlowState extends State<UserFlow> {
                   true) &&
               widget.requireAdminPinEntry
           ? _buildPinEntry(context)
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Center(
-                child: Column(
-                  children: [
-                    Text("ID: ${widget.user.id}"),
-                    Spacer(),
-                    CircleAvatar(
-                      radius: 128,
-                      child: Text(
-                        widget.user.name
-                            .split(' ')
-                            .map((part) => part[0])
-                            .take(2)
-                            .join(),
-                        style: TextStyle(
-                          fontSize: 84,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                    Spacer(),
-                    if (widget.user.status == AttendanceStatus.present)
-                      Text(
-                        "Leaving: ${widget.user.location}",
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      )
-                    else if (widget.fixed)
-                      Text(
-                        "Location: ${widget.fixedLocation}",
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      )
-                    else
-                      Padding(
-                        padding: const EdgeInsets.only(left: 24.0, right: 24.0),
-                        child: DropdownButtonFormField<String>(
-                          initialValue: _selectedLocation,
+          : GestureDetector(
+            onTap: () {isTimerRunning.value = false;},
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              children: [
+                Expanded(
+                  child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Text("ID: ${widget.user.id}"),
+                            Spacer(),
+                            CircleAvatar(
+                              radius: 128,
+                              child: Text(
+                                widget.user.name
+                                    .split(' ')
+                                    .map((part) => part[0])
+                                    .take(2)
+                                    .join(),
+                                style: TextStyle(
+                                  fontSize: 84,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            Spacer(),
+                            if (widget.user.status == AttendanceStatus.present)
+                              Text(
+                                "Leaving: ${widget.user.location}",
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              )
+                            else if (widget.fixed)
+                              Text(
+                                "Location: ${widget.fixedLocation}",
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              )
+                            else
+                              Padding(
+                                padding: const EdgeInsets.only(left: 24.0, right: 24.0),
+                                child: DropdownButtonFormField<String>(
+                                  initialValue: _selectedLocation,
 
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedLocation = value!;
-                            });
-                          },
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            labelText: "Location",
-                          ),
-                          items: widget.allowedLocations!.map((location) {
-                            return DropdownMenuItem<String>(
-                              value: location,
-                              child: Text(location),
-                            );
-                          }).toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedLocation = value!;
+                                    });
+                                  },
+                                  decoration: const InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    labelText: "Location",
+                                  ),
+                                  items: widget.allowedLocations!.map((location) {
+                                    return DropdownMenuItem<String>(
+                                      value: location,
+                                      child: Text(location),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            SizedBox(height: 16),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(width: 16),
+                                Expanded(
+                                  child: FilledButton(
+                                    onPressed:
+                                        widget.user.status == AttendanceStatus.out
+                                        ? () {
+                                            setState(() {
+                                              widget.backend.clockIn(
+                                                widget.user.id,
+                                                widget.fixed
+                                                    ? widget.fixedLocation!
+                                                    : _selectedLocation!,
+                                              );
+                                            });
+                                            Navigator.of(context).pop();
+                                          }
+                                        : null,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(18.0),
+                                      child: Text(
+                                        "Clock In",
+                                        style: TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 16),
+                                Expanded(
+                                  child: FilledButton(
+                                    onPressed:
+                                        widget.user.status == AttendanceStatus.present
+                                        ? () {
+                                            setState(() {
+                                              widget.backend.clockOut(widget.user.id);
+                                            });
+                                            Navigator.of(context).pop();
+                                          }
+                                        : null,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(18.0),
+                                      child: Text(
+                                        "Clock Out",
+                                        style: TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 16),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                    SizedBox(height: 16),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(width: 16),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed:
-                                widget.user.status == AttendanceStatus.out
-                                ? () {
-                                    setState(() {
-                                      widget.backend.clockIn(
-                                        widget.user.id,
-                                        widget.fixed
-                                            ? widget.fixedLocation!
-                                            : _selectedLocation!,
-                                      );
-                                    });
-                                    Navigator.of(context).pop();
-                                  }
-                                : null,
-                            child: Padding(
-                              padding: const EdgeInsets.all(18.0),
-                              child: Text(
-                                "Clock In",
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 16),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed:
-                                widget.user.status == AttendanceStatus.present
-                                ? () {
-                                    setState(() {
-                                      widget.backend.clockOut(widget.user.id);
-                                    });
-                                    Navigator.of(context).pop();
-                                  }
-                                : null,
-                            child: Padding(
-                              padding: const EdgeInsets.all(18.0),
-                              child: Text(
-                                "Clock Out",
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 16),
-                      ],
                     ),
-                  ],
                 ),
-              ),
+                  ValueListenableBuilder(
+                    valueListenable: isTimerRunning,
+                    builder: (context, value, child) {
+                      if (value) {
+                      return TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0, end: 1),
+                        duration: const Duration(seconds: 5),
+                        builder: (context, value, child) {
+                          if (value == 1 && isTimerRunning.value) {
+                            Future.microtask(() {
+                              if (!context.mounted) return true;
+                              return Navigator.of(context).maybePop();
+                            });
+                          }
+                          return LinearProgressIndicator(value: value);
+                        },
+                      );
+                      } else {
+                        return SizedBox(height: 0);
+                      }
+                    }
+                  )
+              ],
             ),
+          ),
     );
   }
 }

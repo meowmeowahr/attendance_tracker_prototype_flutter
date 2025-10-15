@@ -240,7 +240,9 @@ class _HomePageState extends State<HomePage>
             DateTime.fromMicrosecondsSinceEpoch(event.timeStamp.inMilliseconds),
           ),
         );
-      } else if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) { // workaround for bug on web
+      } else if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter && (widget.settingsManager.getValue<String>("rfid.reader") ??
+          widget.settingsManager.getDefault<String>("rfid.reader")!) ==
+          "hid") { // workaround for bug on web
         _rfidHidStreamController.sink.add(
           RfidEvent(
             "\n",

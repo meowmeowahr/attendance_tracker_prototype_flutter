@@ -876,6 +876,7 @@ class AttendanceTrackerBackend {
         AttendanceStatus.out,
         location: null,
         privilege: attendance.value[memberIndex].privilege,
+        passwordHash: attendance.value[memberIndex].passwordHash,
       );
       attendance.value = [
         ...attendance.value,
@@ -909,6 +910,7 @@ class AttendanceTrackerBackend {
         AttendanceStatus.present,
         location: location,
         privilege: attendance.value[memberIndex].privilege,
+        passwordHash: attendance.value[memberIndex].passwordHash,
       );
       attendance.value = [
         ...attendance.value,
