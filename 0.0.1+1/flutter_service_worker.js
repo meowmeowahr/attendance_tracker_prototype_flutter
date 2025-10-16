@@ -9,8 +9,8 @@ const RESOURCES = {"flutter.js": "888483df48293866f9f41d3d9274a779",
 "icons/Icon-192.png": "ac9a721a12bbc803b44f645561ecb1e1",
 "icons/Icon-maskable-192.png": "c457ef57daa1d16f64b27b786ec2ea3c",
 "manifest.json": "e9364d575f7e5734a14b4e16ba552479",
-"index.html": "9316cc3ffc1aa33dd77fbdc656cdf953",
-"/": "9316cc3ffc1aa33dd77fbdc656cdf953",
+"index.html": "cd20dde27ab28beb5ca19796890c2fc8",
+"/": "cd20dde27ab28beb5ca19796890c2fc8",
 "assets/shaders/ink_sparkle.frag": "ecc85a2e95f5e9f53123dcaf8cb9b6ce",
 "assets/AssetManifest.bin.json": "200e3f775449aea984642e65b54c32f0",
 "assets/assets/icons/punch_clock_240.png": "6fd21f780bc330d1c2d0e0f0f374f6d2",
@@ -48,9 +48,9 @@ const RESOURCES = {"flutter.js": "888483df48293866f9f41d3d9274a779",
 "launcher/README.md": "d41d8cd98f00b204e9800998ecf8427e",
 "launcher/generate.py": "1485449227e14599c83ee4f31b23f441",
 "launcher/pyproject.toml": "e9072a87195746d20c0660f8ecdf8cec",
-"flutter_bootstrap.js": "15a4f8c29919c88b3e1f58c515041adc",
-"version.json": "02218c6317981fbf3b217b60cbd5f20f",
-"main.dart.js": "88f946cc7e5710141dc194c8a84ea1ee"};
+"flutter_bootstrap.js": "8deae34cf00cf6e82369d15780b3bb1d",
+"version.json": "99690aa365b4d2ab694056d081dff978",
+"main.dart.js": "a1e67270de0b0fd1bb4ad6a3556329ba"};
 // The application shell files that are downloaded before a service worker can
 // start.
 const CORE = ["main.dart.js",
