@@ -20,10 +20,6 @@
     <div id="versionList">
         <!-- version links will go here -->
     </div>
-
-    <div>
-        <strong>Available Versions:</strong> <span id="versionInfo"></span>
-    </div>
 </div>
 
 <script>
@@ -38,18 +34,14 @@
 
     function populateVersionList() {
       const versionList = document.getElementById('versionList');
-      const versionInfo = document.getElementById('versionInfo');
 
       versionList.innerHTML = '';
-
-      // Add "latest"
       versionList.appendChild(createVersionItem("latest"));
+      versionList.appendChild(document.createElement('br'));
 
       versions.forEach(version => {
         versionList.appendChild(createVersionItem(version));
       });
-
-      versionInfo.textContent = versions.join(', ');
     }
 
     document.addEventListener('DOMContentLoaded', populateVersionList);
