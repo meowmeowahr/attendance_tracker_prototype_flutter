@@ -422,8 +422,18 @@ class _UserFlowState extends State<UserFlow> {
                         builder: (context, value, child) {
                           if (value == 1 && isTimerRunning.value) {
                             Future.microtask(() {
-                              if (!context.mounted) return true;
-                              return Navigator.of(context).maybePop();
+                              isTimerRunning.value = false;
+                              if (!context.mounted) return false;
+                              if (widget.user.status == AttendanceStatus.present) {
+                                widget.backend.clockOut(widget.user.id);
+                                Navigator.of(context).pop();
+                              } else {
+                                widget.backend.clockIn(widget.user.id, widget.fixed
+                                    ? widget.fixedLocation!
+                                    : _selectedLocation!);
+                                Navigator.of(context).pop();
+                              }
+                              return true;
                             });
                           }
                           return LinearProgressIndicator(value: value);

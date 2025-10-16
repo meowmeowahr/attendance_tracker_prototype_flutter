@@ -391,7 +391,7 @@ class _HomePageState extends State<HomePage>
     final rootContext = context; // capture once from the widget
     showDialog(
       barrierColor: Colors.red.withAlpha(40),
-      barrierDismissible: false,
+      barrierDismissible: true,
       context: rootContext,
       builder: (dialogContext) {
         // Schedule dismissal using the rootContext, not dialogContext
@@ -422,11 +422,11 @@ class _HomePageState extends State<HomePage>
     }
     showDialog(
       barrierColor: Colors.green.withAlpha(40),
-      barrierDismissible: false,
+      barrierDismissible: true,
       context: context,
       builder: (context) {
         Timer(Duration(seconds: 1), () {
-          Navigator.of(context).pop();
+          Navigator.of(context).maybePop();
         });
         return AlertDialog(
           content: Column(
