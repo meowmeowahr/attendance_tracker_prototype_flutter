@@ -4,11 +4,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:async/async.dart';
+import 'package:attendance_tracker/log_inst.dart';
 import 'package:attendance_tracker/passwords.dart';
+import 'package:attendance_tracker/settings.dart';
 import 'package:attendance_tracker/string_ext.dart';
 import 'package:attendance_tracker/util.dart';
 import 'package:flutter/material.dart';
 import 'package:googleapis/sheets/v4.dart';
+import 'package:googleapis/tpu/v2.dart';
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
@@ -18,6 +21,82 @@ enum AttendanceStatus { present, out }
 enum MemberPrivilege { admin, student }
 
 enum MemberLoggerAction { created, checkIn, checkOut, disabled, error }
+
+abstract class SerializableItem {
+  Map<String, dynamic> serialize();
+}
+
+typedef Deserializer<T> = T Function(Map<String, dynamic>);
+
+class CachedQueue<T> {
+  final String id;
+  final Queue<T> _queue = Queue<T>();
+  final Deserializer<T> _deserializer;
+
+  CachedQueue(this.id, this._deserializer) {
+    final storedRaw =
+        SettingsManager.getInstance.prefs?.getStringList(id) ?? [];
+    loggerInstance?.d("Restoring CachedQueue<$T> with id '$id' from cache, ${storedRaw.length} items found.");
+    for (var raw in storedRaw) {
+      Map<String, dynamic> item;
+      item = jsonDecode(raw) as Map<String, dynamic>;
+          _queue.add(_deserializer(item));
+    }
+  }
+
+  bool contains(T value) => _queue.contains(value);
+
+  void add(T value) {
+    _queue.add(value);
+    _updateCache();
+  }
+
+  T removeFirst() {
+    final r = _queue.removeFirst();
+    _updateCache();
+    return r;
+  }
+
+  void clear() {
+    _queue.clear();
+    _updateCache();
+  }
+
+  void remove(T value) {
+    _queue.remove(value);
+    _updateCache();
+  }
+
+  void removeWhere(bool Function(T element) test) {
+    _queue.removeWhere(test);
+    _updateCache();
+  }
+
+  void _updateCache() {
+    if (SettingsManager.getInstance.prefs == null) {
+      loggerInstance?.e("Cannot update cache for CachedQueue<$T> with id '$id': SettingsManager prefs is null.");
+    }
+    SettingsManager.getInstance.prefs?.setStringList(id, toSerialStringList());
+  }
+
+  bool get isEmpty => _queue.isEmpty;
+  bool get isNotEmpty => _queue.isNotEmpty;
+
+  @override
+  String toString() => 'CachedQueue($id): ${_queue.toString()}';
+
+  List<T> toList() => _queue.toList();
+
+  List<Map<String, dynamic>> toSerialList() {
+    return _queue.map((e) => (e as SerializableItem).serialize()).toList();
+  }
+
+  List<String> toSerialStringList() {
+    return _queue
+        .map((e) => jsonEncode((e as SerializableItem).serialize()))
+        .toList();
+  }
+}
 
 class Member {
   final int id;
@@ -30,7 +109,8 @@ class Member {
     this.id,
     this.name,
     this.status, {
-      this.location, this.passwordHash,
+    this.location,
+    this.passwordHash,
       this.privilege = MemberPrivilege.student,
   });
 
@@ -40,7 +120,7 @@ class Member {
   }
 }
 
-class MemberLogEntry {
+class MemberLogEntry extends SerializableItem {
   final int memberId;
   final MemberLoggerAction action;
   final DateTime time;
@@ -52,18 +132,93 @@ class MemberLogEntry {
   String toString() {
     return 'MemberLogEntry{memberId: $memberId, action: $action, time: $time, location: $location}';
   }
+
+  static MemberLogEntry fromMap(Map<String, dynamic> data) {
+    final memberId = data['memberId'] is int
+        ? data['memberId'] as int
+        : int.tryParse(data['memberId'].toString()) ?? -1;
+    return MemberLogEntry(
+      memberId,
+      MemberLoggerAction.values.byName(data['action'] as String),
+      DateTime.parse(data['time'] as String),
+      data['location'] as String,
+    );
+  }
+
+  @override
+  Map<String, dynamic> serialize() {
+    return {
+      'memberId': memberId,
+      'action': action.name,
+      'time': time.toIso8601String(),
+      'location': location,
+    };
+  }
 }
 
-class TimeClockEvent {
+class TimeClockEvent extends SerializableItem {
   final int memberId;
   final DateTime time;
   TimeClockEvent(this.memberId, this.time);
+
+  static TimeClockEvent fromMap(Map<String, dynamic> data) {
+    // prefer more specific subclasses if fields are present
+    if (data.containsKey('newHash')) {
+      return PasswordResetEvent(
+        data['memberId'] is int
+            ? data['memberId'] as int
+            : int.parse(data['memberId'].toString()),
+        DateTime.parse(data['time'] as String),
+        data['newHash'] as String,
+      );
+    }
+    if (data.containsKey('location')) {
+      return ClockInEvent(
+        data['memberId'] is int
+            ? data['memberId'] as int
+            : int.parse(data['memberId'].toString()),
+        DateTime.parse(data['time'] as String),
+        data['location'] as String,
+      );
+    }
+    return ClockOutEvent(
+      data['memberId'] is int
+          ? data['memberId'] as int
+          : int.parse(data['memberId'].toString()),
+      DateTime.parse(data['time'] as String),
+    );
+  }
+
+  @override
+  Map<String, dynamic> serialize() {
+    return {
+      'memberId': memberId,
+      'time': time.toIso8601String(),
+    };
+  }
 }
 
 class ClockInEvent extends TimeClockEvent {
   final String location;
 
   ClockInEvent(super.memberId, super.time, this.location);
+
+  @override
+  Map<String, dynamic> serialize() {
+    final base = super.serialize();
+    base['location'] = location;
+    return base;
+  }
+
+  static ClockInEvent fromMap(Map<String, dynamic> data) {
+    return ClockInEvent(
+      data['memberId'] is int
+          ? data['memberId'] as int
+          : int.parse(data['memberId'].toString()),
+      DateTime.parse(data['time'] as String),
+      data['location'] as String,
+    );
+  }
 }
 
 class ClockOutEvent extends TimeClockEvent {
@@ -113,10 +268,15 @@ class AttendanceTrackerBackend {
   RestartableTimer? _updateLogTimer;
   RestartableTimer? _googleAttemptBringupTimer;
 
-  final _clockInQueue = Queue<TimeClockEvent>();
-  final _clockOutQueue = Queue<TimeClockEvent>();
-  final _logQueue = Queue<MemberLogEntry>();
-  final _updatesQueue = Queue<TimeClockEvent>();
+  // language: dart
+  final _clockInQueue =
+      CachedQueue<TimeClockEvent>("queues.clockIn", (m) => TimeClockEvent.fromMap(m));
+  final _clockOutQueue =
+      CachedQueue<TimeClockEvent>("queues.clockOut", (m) => TimeClockEvent.fromMap(m));
+  final _logQueue =
+      CachedQueue<MemberLogEntry>("queues.log", (m) => MemberLogEntry.fromMap(m));
+  final _updatesQueue =
+      CachedQueue<TimeClockEvent>("queues.updates", (m) => TimeClockEvent.fromMap(m));
 
   // google connected flag
   // this must NOT become false on rate limit, null = not initialized
@@ -745,7 +905,7 @@ class AttendanceTrackerBackend {
       // ex: =MAX(FILTER(ROW(A3:C), BYROW(A3:C, LAMBDA(r, COUNTA(r) > 0))))
       int maxRowNeeded = 0; // Track the deepest row we need to write
 
-      for (final entry in _logQueue) {
+      for (final entry in _logQueue.toList()) {
         final startCol =
             header?.values?[0]
                 .map((element) => element.toString())

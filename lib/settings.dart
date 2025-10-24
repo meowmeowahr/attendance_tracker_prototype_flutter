@@ -39,6 +39,8 @@ class SettingsManager {
       SettingsManager._privateConstructor();
   factory SettingsManager() => _instance;
 
+  static SettingsManager get getInstance => _instance;
+
   Future<void> init() async {
     prefs = await SharedPreferences.getInstance();
     for (var entry in _defaultSettings.entries) {
@@ -131,7 +133,7 @@ class SettingsManager {
 
   Future<Map<String, dynamic>> exportSettings() async {
     Map<String, dynamic> settings = {};
-    for (var key in _defaultSettings.keys) {
+    for (var key in _defaultSettings.keys) { // IMPORTANT: do not export anything that isn't a setting (ex. offline queues)
       settings[key] = getDynamic(key);
     }
     return settings;

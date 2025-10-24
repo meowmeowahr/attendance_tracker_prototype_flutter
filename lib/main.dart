@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:async/async.dart';
 import 'package:attendance_tracker/backend.dart';
 import 'package:attendance_tracker/keyboard.dart';
+import 'package:attendance_tracker/log_inst.dart';
 import 'package:attendance_tracker/log_printer.dart';
 import 'package:attendance_tracker/log_view.dart';
 import 'package:attendance_tracker/rfid_event.dart';
@@ -45,6 +46,7 @@ void main() async {
     printer: BoundedMemoryPrinter(),
     output: null, // Use the default LogOutput (-> send everything to console)
   );
+  loggerInstance = logger;
 
   runApp(MyApp(settings, controller, logger));
 }
