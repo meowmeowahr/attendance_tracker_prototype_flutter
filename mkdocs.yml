@@ -40,6 +40,7 @@ nav:
   - index.md
   - Installation:
       - install/android.md
+      - install/rpi.md
   - User Guide:
       - Configuration:
           - config/index.md

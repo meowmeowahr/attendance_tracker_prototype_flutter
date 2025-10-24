@@ -1,5 +1,32 @@
 # FRC Attendance Tracker
 
+## Install
+
+### Supported Platforms
+* Raspberry Pi (via Kiosk Installer)
+* Android (Play Store or APK)
+* iPadOS (App Store)
+* Web (via GitHub Pages, older versions will remain accessible)
+
+### Development Platforms
+
+!!! warning
+    These platforms will not receive any support, and are only intended for development purposes.
+
+[GitHub Releases](https://github.com/meowmeowahr/attendance_tracker_prototype_flutter/releases)
+
+* Windows x86_64
+* Linux x86_64 and ARM64
+* macOS x86_64 and ARM64
+
+## Configure
+
+wip
+
+## Contribute
+
+wip
+
 ## Introduction
 
 Attendance tracker is an app to track the attendance of students, mentors, coaches and volunteers to/from events for the purpose of being able to note hours given to our local community.
