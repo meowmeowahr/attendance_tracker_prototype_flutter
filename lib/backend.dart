@@ -118,6 +118,34 @@ class Member {
   String toString() {
     return 'Member{id: $id, name: $name, status: $status, location: $location, privilege: $privilege, passwordHash: $passwordHash}';
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'status': status.name,
+      'location': location,
+      'privilege': privilege.name,
+      'passwordHash': passwordHash,
+    };
+  }
+
+  static Member fromMap(Map<String, dynamic> data) {
+    return Member(
+      data['id'] is int
+          ? data['id'] as int
+          : int.tryParse(data['id'].toString()) ?? -1,
+      data['name'] as String,
+      AttendanceStatus.values.byName(
+        (data['status'] as String).toLowerCase(),
+      ),
+      location: data['location'] as String?,
+      passwordHash: data['passwordHash'] as String?,
+      privilege: MemberPrivilege.values.byName(
+        (data['privilege'] as String).toLowerCase(),
+      ),
+    );
+  }
 }
 
 class MemberLogEntry extends SerializableItem {
@@ -306,7 +334,22 @@ class AttendanceTrackerBackend {
     _logQueue.clear();
     _updatesQueue.clear();
 
-    attendance.value = [];
+    // attendance.value = [];
+    if (SettingsManager.getInstance.prefs != null) {
+      attendance.value = (SettingsManager.getInstance.prefs!
+              .getStringList('cached.members') ??
+          [])
+          .map((e) => Member.fromMap(jsonDecode(e) as Map<String, dynamic>))
+          .toList();
+      attendance.addListener(() {
+        SettingsManager.getInstance.prefs?.setStringList(
+          'cached.members',
+          attendance.value
+              .map((e) => jsonEncode(e.toMap()))
+              .toList(),
+        );
+      });
+    }
 
     // try to init google
     try {
@@ -527,6 +570,7 @@ class AttendanceTrackerBackend {
       );
     }
     attendance.value = newMembers;
+    // cache members
   }
 
   Future<void> _update() async {

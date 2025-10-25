@@ -468,7 +468,7 @@ class _HomePageState extends State<HomePage>
     if (_backend.googleConnected.value == false) {
       return AppState(Colors.amber, "Connection Lost");
     } else {
-      return AppState(Colors.green, "System Ready");
+      return AppState(Colors.green, "System Online");
     }
   }
 
