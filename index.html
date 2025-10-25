@@ -1,18 +1,50 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="cache-control" content="no-cache" />  <title>Redirecting</title>
-  <noscript>
-    <meta http-equiv="refresh" content="1; url=docs/devel/" />
-  </noscript>
-  <script>
-    window.location.replace(
-      "docs/devel/" + window.location.search + window.location.hash
-    );
-  </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>App Launcher - Select Version</title>
 </head>
 <body>
-  Redirecting to <a href="docs/devel/">devel/</a>...
+<noscript>
+    <div>
+        <h1>JavaScript Required</h1>
+        <p>This application requires JavaScript to function properly. Please enable JavaScript in your browser and reload the page.</p>
+    </div>
+</noscript>
+
+<div>
+    <h1>Attendance Tracker Versions</h1>
+    <p>Select a version to launch</p>
+
+    <div id="versionList">
+        <!-- version links will go here -->
+    </div>
+</div>
+
+<script>
+    const versions = ["0.0.1+2"];
+
+    function createVersionItem(version) {
+      const a = document.createElement('a');
+      a.href = "/attendance_tracker_prototype_flutter/" + version;
+      a.textContent = version;
+      return a;
+    }
+
+    function populateVersionList() {
+      const versionList = document.getElementById('versionList');
+
+      versionList.innerHTML = '';
+      versionList.appendChild(createVersionItem("latest"));
+      versionList.appendChild(document.createElement('br'));
+
+      versions.forEach(version => {
+        versionList.appendChild(createVersionItem(version));
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', populateVersionList);
+</script>
 </body>
 </html>
