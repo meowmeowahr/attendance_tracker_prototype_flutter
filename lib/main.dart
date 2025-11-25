@@ -188,8 +188,7 @@ class _HomePageState extends State<HomePage>
       widget.settingsManager.getValue<String>('google.oauth_credentials') ??
           '{}',
       memberFetchInterval: widget.settingsManager.getValue<int>('backend.interval.memberPolling') ?? widget.settingsManager.getDefault<int>('backend.interval.memberPolling')!,
-      updateInterval: widget.settingsManager.getValue<int>('backend.interval.statusPush') ?? widget.settingsManager.getDefault<int>('backend.interval.statusPush')!,
-      updateLogInterval: widget.settingsManager.getValue<int>('backend.interval.logPush') ?? widget.settingsManager.getDefault<int>('backend.interval.logPush')!,
+      updateInterval: widget.settingsManager.getValue<int>('backend.interval.push') ?? widget.settingsManager.getDefault<int>('backend.interval.push')!,
     );
 
     // search filter
@@ -560,8 +559,7 @@ class _HomePageState extends State<HomePage>
                                 ) ??
                                     '{}',
                                 memberFetchInterval: widget.settingsManager.getValue<int>('backend.interval.memberPolling') ?? widget.settingsManager.getDefault<int>('backend.interval.memberPolling')!,
-                                updateInterval: widget.settingsManager.getValue<int>('backend.interval.statusPush') ?? widget.settingsManager.getDefault<int>('backend.interval.statusPush')!,
-                                updateLogInterval: widget.settingsManager.getValue<int>('backend.interval.logPush') ?? widget.settingsManager.getDefault<int>('backend.interval.logPush')!,
+                                updateInterval: widget.settingsManager.getValue<int>('backend.interval.push') ?? widget.settingsManager.getDefault<int>('backend.interval.push')!,
                               );
                             });
                           },
@@ -734,8 +732,7 @@ class _HomePageState extends State<HomePage>
                               ) ??
                               '{}',
                           memberFetchInterval: widget.settingsManager.getValue<int>('backend.interval.memberPolling') ?? widget.settingsManager.getDefault<int>('backend.interval.memberPolling')!,
-                          updateInterval: widget.settingsManager.getValue<int>('backend.interval.statusPush') ?? widget.settingsManager.getDefault<int>('backend.interval.statusPush')!,
-                          updateLogInterval: widget.settingsManager.getValue<int>('backend.interval.logPush') ?? widget.settingsManager.getDefault<int>('backend.interval.logPush')!,
+                          updateInterval: widget.settingsManager.getValue<int>('backend.interval.push') ?? widget.settingsManager.getDefault<int>('backend.interval.push')!,
                         );
                       });
                     },

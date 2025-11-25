@@ -293,7 +293,6 @@ class AttendanceTrackerBackend {
   // tasks
   RestartableTimer? _memberFetchTimer;
   RestartableTimer? _updateTimer;
-  RestartableTimer? _updateLogTimer;
   RestartableTimer? _googleAttemptBringupTimer;
 
   // language: dart
@@ -324,7 +323,6 @@ class AttendanceTrackerBackend {
     String oauthCredentialString, {
     int memberFetchInterval = 5,
     int updateInterval = 2,
-    int updateLogInterval = 4,
   }) async {
     _oauthCredentials = jsonDecode(oauthCredentialString);
     _sheetId = sheetId;
@@ -422,18 +420,8 @@ class AttendanceTrackerBackend {
       Duration(seconds: memberFetchInterval),
       () async {
         await _update();
-        _updateTimer?.reset();
-      },
-    );
-    if (_updateLogTimer != null) {
-      _updateLogTimer!.cancel();
-    }
-    _updateLogTimer = RestartableTimer(
-      Duration(seconds: memberFetchInterval),
-      () async {
-        await _waitUntilQueuesEmpty();
         await _updateLog();
-        _updateLogTimer?.reset();
+        _updateTimer?.reset();
       },
     );
     _updateMembers(); // no await = schedule for background

@@ -69,8 +69,7 @@ class SettingsManager {
       'rfid.hid.eol': 'RETURN',
       'rfid.hid.format': 'decAscii',
       'backend.interval.memberPolling': 20,
-      'backend.interval.statusPush': 10,
-      'backend.interval.logPush': 20,
+      'backend.interval.push': 10,
     };
 
     _developerOptions = {
@@ -78,8 +77,7 @@ class SettingsManager {
       'rfid.hid.eol': String,
       'rfid.hid.format': DataFormat,
       'backend.interval.memberPolling': int,
-      'backend.interval.statusPush': int,
-      'backend.interval.logPush': int,
+      'backend.interval.push': int,
     };
   }
 
