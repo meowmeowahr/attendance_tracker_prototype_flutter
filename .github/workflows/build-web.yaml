@@ -58,8 +58,17 @@ jobs:
           echo "Versions detected: $versions"
           python3 web/launcher/generate.py -r /attendance_tracker_prototype_flutter/ -o deploy/index.html $versions
 
+      - name: Pull existing gh-pages into deploy/
+        run: |
+          git fetch origin gh-pages
+          git worktree add gh-pages gh-pages
+          mkdir -p deploy
+          cp -r gh-pages/* deploy/ || true
+          rm -rf gh-pages
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: deploy
+          keep_files: true
