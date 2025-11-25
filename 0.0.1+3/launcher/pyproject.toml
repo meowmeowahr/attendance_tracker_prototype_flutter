@@ -1,0 +1,8 @@
+[project]
+name = "launcher"
+version = "0.1.0"
+description = "FRC Attendance Tracker Web Landing Page Generator"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+]
