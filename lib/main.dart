@@ -805,28 +805,36 @@ class _HomePageState extends State<HomePage>
                             children: [
                               Padding(
                                 padding: const EdgeInsets.all(4.0),
-                                child: VirtualTextField(
-                                  decoration: InputDecoration(
-                                    hintText: 'Search name...',
-                                    prefixIcon: Icon(Icons.search),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: VirtualTextField(
+                                        decoration: InputDecoration(
+                                          hintText: 'Search name...',
+                                          prefixIcon: Icon(Icons.search),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        onChanged: (value) {
+                                          _searchQuery = value;
+                                          filteredMembers.value = _backend
+                                              .attendance
+                                              .value
+                                              .where(
+                                                (member) => member.name
+                                                    .toLowerCase()
+                                                    .contains(
+                                                      _searchQuery.toLowerCase(),
+                                                    ),
+                                              )
+                                              .toList();
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                  onChanged: (value) {
-                                    _searchQuery = value;
-                                    filteredMembers.value = _backend
-                                        .attendance
-                                        .value
-                                        .where(
-                                          (member) => member.name
-                                              .toLowerCase()
-                                              .contains(
-                                                _searchQuery.toLowerCase(),
-                                              ),
-                                        )
-                                        .toList();
-                                  },
+                                    SizedBox(width: 8.0,),
+                                    AsyncCompleterButton(onPressed: () async {await _backend.instantMemberUpdate();}, child: Icon(Icons.refresh),),
+                                  ],
                                 ),
                               ),
                               Expanded(

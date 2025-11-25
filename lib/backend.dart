@@ -1131,4 +1131,10 @@ class AttendanceTrackerBackend {
       await Future.delayed(const Duration(milliseconds: 100));
     }
   }
+
+  Future<void> instantMemberUpdate() async {
+    await _update();
+    await _waitUntilQueuesEmpty();
+    await _updateMembers();
+  }
 }

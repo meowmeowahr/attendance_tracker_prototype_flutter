@@ -218,3 +218,50 @@ class _DoubleSpinBoxState extends State<DoubleSpinBox> {
     );
   }
 }
+
+class AsyncCompleterButton extends StatefulWidget {
+  final Future<void> Function() onPressed;
+  final Widget child;
+  final double progressSize;
+  final bool disableWhileRunning;
+
+  const AsyncCompleterButton({
+    super.key,
+    required this.onPressed,
+    required this.child,
+    this.progressSize = 18.0,
+    this.disableWhileRunning = true,
+  });
+
+  @override
+  State<AsyncCompleterButton> createState() => _AsyncCompleterButtonState();
+}
+
+class _AsyncCompleterButtonState extends State<AsyncCompleterButton> {
+  bool _running = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: _running && widget.disableWhileRunning
+          ? null
+          : () async {
+        setState(() => _running = true);
+
+        try {
+          await widget.onPressed();
+        } finally {
+          if (mounted) setState(() => _running = false);
+        }
+      },
+      icon: _running
+          ? SizedBox(
+        width: widget.progressSize,
+        height: widget.progressSize,
+        child: CircularProgressIndicator(
+        ),
+      )
+          : widget.child,
+    );
+  }
+}
