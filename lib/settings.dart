@@ -68,16 +68,22 @@ class SettingsManager {
       'rfid.hid.timeout': 0.2,
       'rfid.hid.eol': 'RETURN',
       'rfid.hid.format': 'decAscii',
-      'backend.interval.memberPolling': 20,
-      'backend.interval.push': 10,
+      'backend.interval.activePull': 20,
+      'backend.interval.activePush': 10,
+      'backend.interval.inactivePull': 90,
+      'backend.interval.inactivePush': 60,
+      'backend.interval.activeCooldown': 60,
     };
 
     _developerOptions = {
       'rfid.hid.timeout': double,
       'rfid.hid.eol': String,
       'rfid.hid.format': DataFormat,
-      'backend.interval.memberPolling': int,
-      'backend.interval.push': int,
+      'backend.interval.activePull': int,
+      'backend.interval.activePush': int,
+      'backend.interval.inactivePull': int,
+      'backend.interval.inactivePush': int,
+      'backend.interval.activeCooldown': int,
     };
   }
 

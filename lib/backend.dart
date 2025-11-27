@@ -271,6 +271,25 @@ class TimeoutClient extends http.BaseClient {
   }
 }
 
+class AdjustableRestartableTimer {
+  RestartableTimer? _timer;
+  final void Function() callback;
+
+  AdjustableRestartableTimer(this.callback);
+
+  void start(Duration duration) {
+    _timer?.cancel();
+    _timer = RestartableTimer(duration, callback);
+  }
+
+  void restartWith(Duration duration) => start(duration);
+
+  void reset() => _timer?.reset();
+
+  void cancel() => _timer?.cancel();
+}
+
+
 class AttendanceTrackerBackend {
   static const memberSheetName = "Members";
   static const logSheetName = "Log";
@@ -291,9 +310,20 @@ class AttendanceTrackerBackend {
   Spreadsheet? _spreadsheet;
 
   // tasks
-  RestartableTimer? _memberFetchTimer;
-  RestartableTimer? _updateTimer;
+  AdjustableRestartableTimer? _memberFetchTimer;
+  AdjustableRestartableTimer? _updateTimer;
   RestartableTimer? _googleAttemptBringupTimer;
+
+  Duration? pushDuration;
+  Duration? pullDuration;
+
+  Duration? pushDurationActive;
+  Duration? pullDurationActive;
+  Duration? pushDurationInactive;
+  Duration? pullDurationInactive;
+
+  Duration? activeCooldownDuration;
+  RestartableTimer? activeCooldownTimer;
 
   // language: dart
   final _clockInQueue =
@@ -321,8 +351,11 @@ class AttendanceTrackerBackend {
   void initialize(
     String sheetId,
     String oauthCredentialString, {
-    int memberFetchInterval = 5,
-    int updateInterval = 2,
+    int pullIntervalActive = 5,
+    int pushIntervalActive = 2,
+    int pullIntervalInactive = 10,
+    int pushIntervalInactive = 4,
+    int activeCooldownInterval = 10,
   }) async {
     _oauthCredentials = jsonDecode(oauthCredentialString);
     _sheetId = sheetId;
@@ -348,6 +381,21 @@ class AttendanceTrackerBackend {
         );
       });
     }
+
+    pullDuration = Duration(seconds: pullIntervalInactive);
+    pushDuration = Duration(seconds: pushIntervalInactive);
+    activeCooldownDuration = Duration(seconds: activeCooldownInterval);
+
+    pullDurationActive = Duration(seconds: pullIntervalActive);
+    pushDurationActive = Duration(seconds: pushIntervalActive);
+    pullDurationInactive = Duration(seconds: pullIntervalInactive);
+    pushDurationInactive = Duration(seconds: pushIntervalInactive);
+
+    activeCooldownTimer = RestartableTimer(activeCooldownDuration!, () {
+      pullDuration = pullDurationInactive;
+      pushDuration = pushDurationInactive;
+      logger.d("Switched to inactive sync intervals: pull=${pullDuration!.inSeconds}s, push=${pushDuration!.inSeconds}s");
+    });
 
     // try to init google
     try {
@@ -405,23 +453,21 @@ class AttendanceTrackerBackend {
     if (_memberFetchTimer != null) {
       _memberFetchTimer!.cancel();
     }
-    _memberFetchTimer = RestartableTimer(
-      Duration(seconds: memberFetchInterval),
+    _memberFetchTimer = AdjustableRestartableTimer(
       () async {
         await _waitUntilQueuesEmpty();
         await _updateMembers();
-        _memberFetchTimer?.reset();
+        _memberFetchTimer?.restartWith(pullDuration!);
       },
     );
     if (_updateTimer != null) {
       _updateTimer!.cancel();
     }
-    _updateTimer = RestartableTimer(
-      Duration(seconds: memberFetchInterval),
+    _updateTimer = AdjustableRestartableTimer(
       () async {
         await _update();
         await _updateLog();
-        _updateTimer?.reset();
+        _updateTimer?.restartWith(pushDuration!);
       },
     );
     _updateMembers(); // no await = schedule for background
@@ -1075,6 +1121,8 @@ class AttendanceTrackerBackend {
       ]; // I think this is a bug in ValueNotifier
     }
     logger.d('Member with ID $memberId marked for clock out');
+
+    _reactivateCooldown();
   }
 
   void clockIn(int memberId, String location) {
@@ -1109,6 +1157,8 @@ class AttendanceTrackerBackend {
       ]; // I think this is a bug in ValueNotifier
     }
     logger.d('Member with ID $memberId marked for clock in');
+
+    _reactivateCooldown();
   }
 
   Future<void> resetPassword(int memberId, String passwordString) async {
@@ -1118,11 +1168,25 @@ class AttendanceTrackerBackend {
     while (_updatesQueue.contains(event)) {
       await Future.delayed(const Duration(milliseconds: 100));
     }
+
+    _reactivateCooldown();
   }
 
   Future<void> instantMemberUpdate() async {
     await _update();
     await _waitUntilQueuesEmpty();
     await _updateMembers();
+  }
+
+  void _reactivateCooldown() {
+    bool wasActive = pullDuration == pullDurationActive;
+    pullDuration = pullDurationActive;
+    pushDuration = pushDurationActive;
+    if (!wasActive) {
+      _updateTimer?.restartWith(pushDuration!);
+      _memberFetchTimer?.restartWith(pullDuration!);
+    }
+    activeCooldownTimer?.reset();
+    logger.d("Switched to active sync intervals: pull=${pullDuration!.inSeconds}s, push=${pushDuration!.inSeconds}s");
   }
 }
