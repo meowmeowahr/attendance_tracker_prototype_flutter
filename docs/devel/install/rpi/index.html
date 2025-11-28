@@ -368,6 +368,19 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Raspberry Pi Installation
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -379,6 +392,94 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#kiosk-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Kiosk Installation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kiosk Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Requirements
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flashing-sd-card-with-pi-os-lite" class="md-nav__link">
+    <span class="md-ellipsis">
+      Flashing SD card with Pi OS Lite
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#booting-the-pi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Booting the Pi
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connect-to-the-pi-via-ssh" class="md-nav__link">
+    <span class="md-ellipsis">
+      Connect to the Pi via SSH
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-the-kiosk-installer" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running the Kiosk Installer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Post-Installation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -569,6 +670,83 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#kiosk-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Kiosk Installation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kiosk Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Requirements
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#flashing-sd-card-with-pi-os-lite" class="md-nav__link">
+    <span class="md-ellipsis">
+      Flashing SD card with Pi OS Lite
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#booting-the-pi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Booting the Pi
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connect-to-the-pi-via-ssh" class="md-nav__link">
+    <span class="md-ellipsis">
+      Connect to the Pi via SSH
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-the-kiosk-installer" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running the Kiosk Installer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#post-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Post-Installation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -592,10 +770,116 @@
 
 
 <h1 id="raspberry-pi-installation">Raspberry Pi Installation</h1>
+<p><em>Second</em> supports a Raspberry Pi 5 running Pi OS Bookworm or newer.
+It may be possible to use it on a Pi 4 or older, but this is untested.</p>
+<p>An automated installation script is provided to simplify the setup process of a kiosk system.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The kiosk installation requires Pi OS Lite.
+Running the installation script on a full Pi OS installation will <strong>NOT WORK</strong>.</p>
+</div>
+<h2 id="kiosk-installation">Kiosk Installation</h2>
+<h3 id="requirements">Requirements</h3>
+<ol>
+<li>Raspberry Pi 5</li>
+<li>microSD card (8GB or larger)</li>
+<li>Another computer to flash the microSD card</li>
+<li>Internet connection</li>
+<li>Keyboard and mouse (for initial setup)</li>
+<li>Display (touchscreen recommended for kiosk use)</li>
+</ol>
+<h3 id="flashing-sd-card-with-pi-os-lite">Flashing SD card with Pi OS Lite</h3>
+<p><a href="https://www.raspberrypi.com/software/">Raspberry Pi Imager</a> is required to flash the microSD card. This guide is written for Pi Imager 2.0.0 or newer.</p>
+<ol>
+<li>
+<p>Select the target board</p>
+<p><img alt="imager_select_device.png" src="../../media/imager/imager_select_device.png" /></p>
+</li>
+<li>
+<p>Select Pi OS Lite (64-bit)</p>
+<p>Raspberry Pi OS (other) → Raspberry Pi OS Lite (64-bit)</p>
+<p><img alt="imager_select_os.png" src="../../media/imager/imager_select_os.png" /></p>
+</li>
+<li>
+<p>Select the microSD card</p>
+<p>Insert the microSD card into your computer and select it in Pi Imager.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This will erase all data on the selected drive.</p>
+</div>
+<p><img alt="imager_select_target.png" src="../../media/imager/imager_select_target.png" /></p>
+</li>
+<li>
+<p>Customization</p>
+<p>Here you will enable SSH and set up Wi-Fi (if not using Ethernet or your kiosk).</p>
 <ul>
-<li>Only support 64-bit Bookworm</li>
-<li><code>sudo apt install python3-venv</code></li>
+<li>
+<p>Hostname</p>
+<p>Configure a unique hostname for your Raspberry Pi.</p>
+</li>
+<li>
+<p>Localisation</p>
+<p>Set your locale, timezone, and keyboard layout.</p>
+</li>
+<li>
+<p>User</p>
+<p>Set a username and password for the kiosk's user (the kiosk will auto-login).</p>
+</li>
+<li>
+<p>Wi-Fi</p>
+<p>Configure your Wi-Fi SSID and password. Leave the fields blank if using Ethernet.</p>
+</li>
+<li>
+<p>Remote access</p>
+<p>Enable SSH to allow remote access to the Raspberry Pi for running the installation script.</p>
+</li>
+<li>
+<p>Raspberry Pi Connect</p>
+<p>Skip this step. Raspberry Pi Connect will not work with the kiosk setup.</p>
+</li>
 </ul>
+</li>
+<li>
+<p>Write the image</p>
+<p>Before writing, double-check all settings.</p>
+<p><img alt="imager_write.png" src="../../media/imager/imager_write.png" /></p>
+<p>Press <em>Write</em> and for the image to be flashed and verified. </p>
+</li>
+</ol>
+<h3 id="booting-the-pi">Booting the Pi</h3>
+<p>Insert the flashed microSD card into the Raspberry Pi and power it on.
+If using Ethernet, connect the network cable before powering on.</p>
+<p>Upon booting the Pi, you will see a <strong>"My IP address is ..."</strong> message.
+Take note of the IP address for SSH access.</p>
+<h3 id="connect-to-the-pi-via-ssh">Connect to the Pi via SSH</h3>
+<p>SSH is available on all Macs, Linux systems, and Windows 10 or newer.</p>
+<p>You can use your computer's Terminal (Mac, Linux) or Command Prompt (Windows) app to use SSH.</p>
+<p>Run the following command, replacing <code>username</code> with the username you set during the Pi OS Lite installation, and <code>ip_address</code> with the IP address displayed on the Pi:</p>
+<pre><code class="language-shell">ssh username@ip_address
+</code></pre>
+<p>You will be asked to accept the Pi's SSH key and enter the password you set during installation.</p>
+<p>Once in the Pi's shell, you are ready to complete the next steps.</p>
+<h3 id="running-the-kiosk-installer">Running the Kiosk Installer</h3>
+<p>Python's Virtual Environment module is required to run the installation script.</p>
+<p>Install it with:</p>
+<pre><code class="language-shell">sudo apt install python3-venv
+</code></pre>
+<p>Download the installation script:</p>
+<pre><code class="language-shell">curl -SLo install.py https://raw.githubusercontent.com/meowmeowahr/attendance_tracker_prototype_flutter/refs/heads/main/pi_os_installer/main.py
+</code></pre>
+<p>Run the installation script with superuser privileges:</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The installation process may take a while (~10-20 minutes).</p>
+</div>
+<pre><code class="language-shell">sudo python3 install.py
+</code></pre>
+<p>Reboot the Pi into the new kiosk environment:</p>
+<pre><code class="language-shell">sudo reboot
+</code></pre>
+<h3 id="post-installation">Post-Installation</h3>
+<p>Congratulations! Your Raspberry Pi should now boot directly into the <em>Second</em> kiosk application.</p>
+<p>Configure the device by following the guide <a href="../../config/">here</a>.</p>
 
 
 
