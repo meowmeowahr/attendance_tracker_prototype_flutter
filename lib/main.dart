@@ -22,6 +22,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:lottie/lottie.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -152,6 +153,8 @@ class _HomePageState extends State<HomePage>
     'com.example.attendance_tracker/lockdown',
   );
 
+  PackageInfo? packageInfo;
+
   // clock
   late ValueNotifier<DateTime> _now;
   late Timer _clockTimer;
@@ -181,6 +184,13 @@ class _HomePageState extends State<HomePage>
   @override
   void initState() {
     super.initState();
+    // info
+    PackageInfo.fromPlatform().then((info) {
+      setState(() {
+        packageInfo = info;
+      });
+    });
+
     // backend
     _backend = AttendanceTrackerBackend(widget.logger);
     _backend.initialize(
@@ -593,10 +603,12 @@ class _HomePageState extends State<HomePage>
                           onTap: () {
                             showAboutDialog(
                               context: context,
-                              applicationName: 'Attendance Tracker',
-                              applicationVersion: '1.0.0',
+                              applicationName: 'Second',
+                              applicationVersion: "${packageInfo?.version} (Build #${packageInfo?.buildNumber})",
                               applicationIcon: FlutterLogo(size: 64),
-                              children: [],
+                              children: [
+                                Text("An FRC Attendance Tracker")
+                              ],
                             );
                           },
                         ),
