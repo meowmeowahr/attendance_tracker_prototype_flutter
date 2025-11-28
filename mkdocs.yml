@@ -42,6 +42,9 @@ nav:
       - install/android.md
       - install/rpi.md
   - User Guide:
+      - Google Sheet and Account Setup:
+          - google_setup/account.md
+          - google_setup/sheet.md
       - Configuration:
           - config/index.md
           - config/androidlock.md
@@ -56,3 +59,4 @@ plugins:
 
 markdown_extensions:
   - admonition
+  - pymdownx.critic
