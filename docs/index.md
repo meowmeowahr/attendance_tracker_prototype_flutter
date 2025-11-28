@@ -1,4 +1,4 @@
-# FRC Attendance Tracker
+# _Second_
 
 ## Install
 
@@ -6,7 +6,7 @@
 * Raspberry Pi (via Kiosk Installer)
 * Android (Play Store or APK)
 * iPadOS (App Store)
-* Web (via GitHub Pages, older versions will remain accessible)
+* Web (via GitHub Pages, older versions will **NOT** remain accessible)
 
 ### Development Platforms
 

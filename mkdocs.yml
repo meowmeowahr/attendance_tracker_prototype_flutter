@@ -1,8 +1,9 @@
-site_name: FRC Attendance Tracker
+site_name: Second Docs
 repo_url: https://github.com/meowmeowahr/attendance_tracker_prototype_flutter
 
 theme:
   name: material
+  logo: media/logos/header.svg
   language: en
   features:
     - content.code.copy
