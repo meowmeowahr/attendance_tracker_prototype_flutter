@@ -6,7 +6,7 @@ A template Google Sheet for _Second_ is provided [here](https://docs.google.com/
 
 ## Getting the Sheet's ID
 
-The sheet ID can be retrieved from the URL your copy.
+The sheet ID can be retrieved from the URL of your copy.
 
 For example the ID of `https://docs.google.com/spreadsheets/d/{++1oSpvY5a2ia-BMnCmbfHnVarhzfLuNhgHjvAtxOJZANI++}/edit?gid=2019486561#gid=2019486561`
 

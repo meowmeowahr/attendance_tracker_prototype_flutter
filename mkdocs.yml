@@ -46,6 +46,9 @@ nav:
       - Google Sheet and Account Setup:
           - google_setup/account.md
           - google_setup/sheet.md
+      - User Interface:
+          - ui/home.md
+          - ui/member.md
       - Configuration:
           - config/index.md
           - config/androidlock.md
