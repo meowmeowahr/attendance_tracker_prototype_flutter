@@ -11,7 +11,6 @@ import 'package:attendance_tracker/string_ext.dart';
 import 'package:attendance_tracker/util.dart';
 import 'package:flutter/material.dart';
 import 'package:googleapis/sheets/v4.dart';
-import 'package:googleapis/tpu/v2.dart';
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
