@@ -197,11 +197,37 @@ class _HomePageState extends State<HomePage>
       widget.settingsManager.getValue<String>('google.sheet_id') ?? '',
       widget.settingsManager.getValue<String>('google.oauth_credentials') ??
           '{}',
-      pullIntervalActive: widget.settingsManager.getValue<int>('backend.interval.activePull') ?? widget.settingsManager.getDefault<int>('backend.interval.activePull')!,
-      pushIntervalActive: widget.settingsManager.getValue<int>('backend.interval.activePush') ?? widget.settingsManager.getDefault<int>('backend.interval.activePush')!,
-      pullIntervalInactive: widget.settingsManager.getValue<int>('backend.interval.inactivePull') ?? widget.settingsManager.getDefault<int>('backend.interval.inactivePull')!,
-      pushIntervalInactive: widget.settingsManager.getValue<int>('backend.interval.inactivePush') ?? widget.settingsManager.getDefault<int>('backend.interval.inactivePush')!,
-      activeCooldownInterval: widget.settingsManager.getValue<int>('backend.interval.activeCooldown') ?? widget.settingsManager.getDefault<int>('backend.interval.activeCooldown')!,
+      pullIntervalActive:
+          widget.settingsManager.getValue<int>('backend.interval.activePull') ??
+          widget.settingsManager.getDefault<int>(
+            'backend.interval.activePull',
+          )!,
+      pushIntervalActive:
+          widget.settingsManager.getValue<int>('backend.interval.activePush') ??
+          widget.settingsManager.getDefault<int>(
+            'backend.interval.activePush',
+          )!,
+      pullIntervalInactive:
+          widget.settingsManager.getValue<int>(
+            'backend.interval.inactivePull',
+          ) ??
+          widget.settingsManager.getDefault<int>(
+            'backend.interval.inactivePull',
+          )!,
+      pushIntervalInactive:
+          widget.settingsManager.getValue<int>(
+            'backend.interval.inactivePush',
+          ) ??
+          widget.settingsManager.getDefault<int>(
+            'backend.interval.inactivePush',
+          )!,
+      activeCooldownInterval:
+          widget.settingsManager.getValue<int>(
+            'backend.interval.activeCooldown',
+          ) ??
+          widget.settingsManager.getDefault<int>(
+            'backend.interval.activeCooldown',
+          )!,
     );
 
     // search filter
@@ -249,9 +275,12 @@ class _HomePageState extends State<HomePage>
             DateTime.fromMicrosecondsSinceEpoch(event.timeStamp.inMilliseconds),
           ),
         );
-      } else if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter && (widget.settingsManager.getValue<String>("rfid.reader") ??
-          widget.settingsManager.getDefault<String>("rfid.reader")!) ==
-          "hid") { // workaround for bug on web
+      } else if (event is KeyDownEvent &&
+          event.logicalKey == LogicalKeyboardKey.enter &&
+          (widget.settingsManager.getValue<String>("rfid.reader") ??
+                  widget.settingsManager.getDefault<String>("rfid.reader")!) ==
+              "hid") {
+        // workaround for bug on web
         _rfidHidStreamController.sink.add(
           RfidEvent(
             "\n",
@@ -528,7 +557,7 @@ class _HomePageState extends State<HomePage>
                         },
                       ),
                     ),
-                    Spacer(flex: 2,),
+                    Spacer(flex: 2),
                     PopupMenuButton<String>(
                       icon: Icon(Icons.more_vert),
                       tooltip: "",
@@ -552,10 +581,9 @@ class _HomePageState extends State<HomePage>
                               setState(() {
                                 _homeScreenImage.value = base64.decode(
                                   widget.settingsManager.getValue<String>(
-                                    "app.theme.logo",
-                                  ) ??
-                                      widget.settingsManager
-                                          .getDefault<String>(
+                                        "app.theme.logo",
+                                      ) ??
+                                      widget.settingsManager.getDefault<String>(
                                         "app.theme.logo",
                                       )!,
                                 );
@@ -564,18 +592,48 @@ class _HomePageState extends State<HomePage>
                               // backend
                               _backend.initialize(
                                 widget.settingsManager.getValue<String>(
-                                  'google.sheet_id',
-                                ) ??
+                                      'google.sheet_id',
+                                    ) ??
                                     '',
                                 widget.settingsManager.getValue<String>(
-                                  'google.oauth_credentials',
-                                ) ??
+                                      'google.oauth_credentials',
+                                    ) ??
                                     '{}',
-                                pullIntervalActive: widget.settingsManager.getValue<int>('backend.interval.activePull') ?? widget.settingsManager.getDefault<int>('backend.interval.activePull')!,
-                                pushIntervalActive: widget.settingsManager.getValue<int>('backend.interval.activePush') ?? widget.settingsManager.getDefault<int>('backend.interval.activePush')!,
-                                pullIntervalInactive: widget.settingsManager.getValue<int>('backend.interval.inactivePull') ?? widget.settingsManager.getDefault<int>('backend.interval.inactivePull')!,
-                                pushIntervalInactive: widget.settingsManager.getValue<int>('backend.interval.inactivePush') ?? widget.settingsManager.getDefault<int>('backend.interval.inactivePush')!,
-                                activeCooldownInterval: widget.settingsManager.getValue<int>('backend.interval.activeCooldown') ?? widget.settingsManager.getDefault<int>('backend.interval.activeCooldown')!,
+                                pullIntervalActive:
+                                    widget.settingsManager.getValue<int>(
+                                      'backend.interval.activePull',
+                                    ) ??
+                                    widget.settingsManager.getDefault<int>(
+                                      'backend.interval.activePull',
+                                    )!,
+                                pushIntervalActive:
+                                    widget.settingsManager.getValue<int>(
+                                      'backend.interval.activePush',
+                                    ) ??
+                                    widget.settingsManager.getDefault<int>(
+                                      'backend.interval.activePush',
+                                    )!,
+                                pullIntervalInactive:
+                                    widget.settingsManager.getValue<int>(
+                                      'backend.interval.inactivePull',
+                                    ) ??
+                                    widget.settingsManager.getDefault<int>(
+                                      'backend.interval.inactivePull',
+                                    )!,
+                                pushIntervalInactive:
+                                    widget.settingsManager.getValue<int>(
+                                      'backend.interval.inactivePush',
+                                    ) ??
+                                    widget.settingsManager.getDefault<int>(
+                                      'backend.interval.inactivePush',
+                                    )!,
+                                activeCooldownInterval:
+                                    widget.settingsManager.getValue<int>(
+                                      'backend.interval.activeCooldown',
+                                    ) ??
+                                    widget.settingsManager.getDefault<int>(
+                                      'backend.interval.activeCooldown',
+                                    )!,
                               );
                             });
                           },
@@ -604,11 +662,14 @@ class _HomePageState extends State<HomePage>
                             showAboutDialog(
                               context: context,
                               applicationName: 'Second',
-                              applicationVersion: "${packageInfo?.version} (Build #${packageInfo?.buildNumber})",
-                              applicationIcon: FlutterLogo(size: 64),
-                              children: [
-                                Text("An FRC Attendance Tracker")
-                              ],
+                              applicationVersion:
+                                  "${packageInfo?.version} (Build #${packageInfo?.buildNumber})",
+                              applicationIcon: Image.asset(
+                                "assets/icons/icon_96.png",
+                                width: 64,
+                                height: 64,
+                              ),
+                              children: [Text("An FRC Attendance Tracker")],
                             );
                           },
                         ),
@@ -620,11 +681,7 @@ class _HomePageState extends State<HomePage>
               ValueListenableBuilder(
                 valueListenable: _homeScreenImage,
                 builder: (context, image, widget) {
-                  return Image.memory(
-                    image,
-                    width: iconSize,
-                    fit: BoxFit.fill,
-                  );
+                  return Image.memory(image, width: iconSize, fit: BoxFit.fill);
                 },
               ),
               Spacer(),
@@ -749,11 +806,41 @@ class _HomePageState extends State<HomePage>
                                 'google.oauth_credentials',
                               ) ??
                               '{}',
-                          pullIntervalActive: widget.settingsManager.getValue<int>('backend.interval.activePull') ?? widget.settingsManager.getDefault<int>('backend.interval.activePull')!,
-                          pushIntervalActive: widget.settingsManager.getValue<int>('backend.interval.activePush') ?? widget.settingsManager.getDefault<int>('backend.interval.activePush')!,
-                          pullIntervalInactive: widget.settingsManager.getValue<int>('backend.interval.inactivePull') ?? widget.settingsManager.getDefault<int>('backend.interval.inactivePull')!,
-                          pushIntervalInactive: widget.settingsManager.getValue<int>('backend.interval.inactivePush') ?? widget.settingsManager.getDefault<int>('backend.interval.inactivePush')!,
-                          activeCooldownInterval: widget.settingsManager.getValue<int>('backend.interval.activeCooldown') ?? widget.settingsManager.getDefault<int>('backend.interval.activeCooldown')!,
+                          pullIntervalActive:
+                              widget.settingsManager.getValue<int>(
+                                'backend.interval.activePull',
+                              ) ??
+                              widget.settingsManager.getDefault<int>(
+                                'backend.interval.activePull',
+                              )!,
+                          pushIntervalActive:
+                              widget.settingsManager.getValue<int>(
+                                'backend.interval.activePush',
+                              ) ??
+                              widget.settingsManager.getDefault<int>(
+                                'backend.interval.activePush',
+                              )!,
+                          pullIntervalInactive:
+                              widget.settingsManager.getValue<int>(
+                                'backend.interval.inactivePull',
+                              ) ??
+                              widget.settingsManager.getDefault<int>(
+                                'backend.interval.inactivePull',
+                              )!,
+                          pushIntervalInactive:
+                              widget.settingsManager.getValue<int>(
+                                'backend.interval.inactivePush',
+                              ) ??
+                              widget.settingsManager.getDefault<int>(
+                                'backend.interval.inactivePush',
+                              )!,
+                          activeCooldownInterval:
+                              widget.settingsManager.getValue<int>(
+                                'backend.interval.activeCooldown',
+                              ) ??
+                              widget.settingsManager.getDefault<int>(
+                                'backend.interval.activeCooldown',
+                              )!,
                         );
                       });
                     },
@@ -831,7 +918,9 @@ class _HomePageState extends State<HomePage>
                                           hintText: 'Search name...',
                                           prefixIcon: Icon(Icons.search),
                                           border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                         ),
                                         onChanged: (value) {
@@ -843,15 +932,21 @@ class _HomePageState extends State<HomePage>
                                                 (member) => member.name
                                                     .toLowerCase()
                                                     .contains(
-                                                      _searchQuery.toLowerCase(),
+                                                      _searchQuery
+                                                          .toLowerCase(),
                                                     ),
                                               )
                                               .toList();
                                         },
                                       ),
                                     ),
-                                    SizedBox(width: 8.0,),
-                                    AsyncCompleterButton(onPressed: () async {await _backend.instantMemberUpdate();}, child: Icon(Icons.refresh),),
+                                    SizedBox(width: 8.0),
+                                    AsyncCompleterButton(
+                                      onPressed: () async {
+                                        await _backend.instantMemberUpdate();
+                                      },
+                                      child: Icon(Icons.refresh),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -973,15 +1068,15 @@ class _HomePageState extends State<HomePage>
                     builder: (BuildContext context, Orientation orientation) {
                       if (orientation == Orientation.landscape) {
                         final sections = _buildContentSections(240, false);
-                        return Row(children: [
-                          SizedBox(width: 300, child: sections[0]),
-                          Expanded(
-                            flex: 2,
-                            child: Column(
-                              children: sections.sublist(1),
+                        return Row(
+                          children: [
+                            SizedBox(width: 300, child: sections[0]),
+                            Expanded(
+                              flex: 2,
+                              child: Column(children: sections.sublist(1)),
                             ),
-                          ),
-                        ]);
+                          ],
+                        );
                       } else {
                         return Column(
                           children: _buildContentSections(120, true),

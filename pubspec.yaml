@@ -76,6 +76,7 @@ flutter:
     - assets/layouts/en-US-shift.xml
     - assets/layouts/NumSym.xml
     - assets/icons/punch_clock_240.png
+    - assets/icons/icon_96.png
     - assets/animations/fail.json
     - assets/animations/success.json
 
