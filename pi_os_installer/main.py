@@ -214,7 +214,7 @@ def install_packages(console, packages):
 def run_installer():
     console = Console()
     console.clear()
-    console.print("[green]Welcome to the Attendance Tracker Installer![/green]")
+    console.print("[green]Welcome to the SECOND Installer![/green]")
 
     console.print("Running pre-install checks...")
 
@@ -279,7 +279,7 @@ def run_installer():
         return 1
 
     release_choice = choice(
-        message="Choose your desired Attendance Tracker version:",
+        message="Choose your desired version:",
         options=[
             (
                 rel["version"],
@@ -299,7 +299,7 @@ def run_installer():
         return 2
 
     console.print(
-        f"[cyan]Installing Attendance Tracker for user: {user_account}[/cyan]"
+        f"[cyan]Installing SECOND for user: {user_account}[/cyan]"
     )
 
     # download release

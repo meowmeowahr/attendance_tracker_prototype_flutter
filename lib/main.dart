@@ -114,7 +114,7 @@ class _MyAppState extends State<MyApp> {
             );
 
             return MaterialApp(
-              title: 'Attendance Tracker',
+              title: 'Second',
               themeMode: widget.themeController.themeMode.value,
               darkTheme: darkTheme,
               theme: lightTheme,
@@ -150,7 +150,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   static const lockdownPlatform = MethodChannel(
-    'com.example.attendance_tracker/lockdown',
+    'org.mckinneysteamacademy.second/lockdown',
   );
 
   PackageInfo? packageInfo;

@@ -14,7 +14,7 @@ class AndroidLockdownPage extends StatefulWidget {
 
 class _AndroidLockdownPageState extends State<AndroidLockdownPage> {
   static const platform = MethodChannel(
-    'com.example.attendance_tracker/lockdown',
+    'org.mckinneysteamacademy.second/lockdown',
   );
 
   bool _isDefaultLauncher = false;
