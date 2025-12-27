@@ -35,11 +35,13 @@ class CachedQueue<T> {
   CachedQueue(this.id, this._deserializer) {
     final storedRaw =
         SettingsManager.getInstance.prefs?.getStringList(id) ?? [];
-    loggerInstance?.d("Restoring CachedQueue<$T> with id '$id' from cache, ${storedRaw.length} items found.");
+    loggerInstance?.d(
+      "Restoring CachedQueue<$T> with id '$id' from cache, ${storedRaw.length} items found.",
+    );
     for (var raw in storedRaw) {
       Map<String, dynamic> item;
       item = jsonDecode(raw) as Map<String, dynamic>;
-          _queue.add(_deserializer(item));
+      _queue.add(_deserializer(item));
     }
   }
 
@@ -73,7 +75,9 @@ class CachedQueue<T> {
 
   void _updateCache() {
     if (SettingsManager.getInstance.prefs == null) {
-      loggerInstance?.e("Cannot update cache for CachedQueue<$T> with id '$id': SettingsManager prefs is null.");
+      loggerInstance?.e(
+        "Cannot update cache for CachedQueue<$T> with id '$id': SettingsManager prefs is null.",
+      );
     }
     SettingsManager.getInstance.prefs?.setStringList(id, toSerialStringList());
   }
@@ -110,7 +114,7 @@ class Member {
     this.status, {
     this.location,
     this.passwordHash,
-      this.privilege = MemberPrivilege.student,
+    this.privilege = MemberPrivilege.student,
   });
 
   @override
@@ -135,9 +139,7 @@ class Member {
           ? data['id'] as int
           : int.tryParse(data['id'].toString()) ?? -1,
       data['name'] as String,
-      AttendanceStatus.values.byName(
-        (data['status'] as String).toLowerCase(),
-      ),
+      AttendanceStatus.values.byName((data['status'] as String).toLowerCase()),
       location: data['location'] as String?,
       passwordHash: data['passwordHash'] as String?,
       privilege: MemberPrivilege.values.byName(
@@ -218,10 +220,7 @@ class TimeClockEvent extends SerializableItem {
 
   @override
   Map<String, dynamic> serialize() {
-    return {
-      'memberId': memberId,
-      'time': time.toIso8601String(),
-    };
+    return {'memberId': memberId, 'time': time.toIso8601String()};
   }
 }
 
@@ -288,7 +287,6 @@ class AdjustableRestartableTimer {
   void cancel() => _timer?.cancel();
 }
 
-
 class AttendanceTrackerBackend {
   static const memberSheetName = "Members";
   static const logSheetName = "Log";
@@ -325,14 +323,22 @@ class AttendanceTrackerBackend {
   RestartableTimer? activeCooldownTimer;
 
   // language: dart
-  final _clockInQueue =
-      CachedQueue<TimeClockEvent>("queues.clockIn", (m) => TimeClockEvent.fromMap(m));
-  final _clockOutQueue =
-      CachedQueue<TimeClockEvent>("queues.clockOut", (m) => TimeClockEvent.fromMap(m));
-  final _logQueue =
-      CachedQueue<MemberLogEntry>("queues.log", (m) => MemberLogEntry.fromMap(m));
-  final _updatesQueue =
-      CachedQueue<TimeClockEvent>("queues.updates", (m) => TimeClockEvent.fromMap(m));
+  final _clockInQueue = CachedQueue<TimeClockEvent>(
+    "queues.clockIn",
+    (m) => TimeClockEvent.fromMap(m),
+  );
+  final _clockOutQueue = CachedQueue<TimeClockEvent>(
+    "queues.clockOut",
+    (m) => TimeClockEvent.fromMap(m),
+  );
+  final _logQueue = CachedQueue<MemberLogEntry>(
+    "queues.log",
+    (m) => MemberLogEntry.fromMap(m),
+  );
+  final _updatesQueue = CachedQueue<TimeClockEvent>(
+    "queues.updates",
+    (m) => TimeClockEvent.fromMap(m),
+  );
 
   // google connected flag
   // this must NOT become false on rate limit, null = not initialized
@@ -366,17 +372,15 @@ class AttendanceTrackerBackend {
 
     // attendance.value = [];
     if (SettingsManager.getInstance.prefs != null) {
-      attendance.value = (SettingsManager.getInstance.prefs!
-              .getStringList('cached.members') ??
-          [])
-          .map((e) => Member.fromMap(jsonDecode(e) as Map<String, dynamic>))
-          .toList();
+      attendance.value =
+          (SettingsManager.getInstance.prefs!.getStringList('cached.members') ??
+                  [])
+              .map((e) => Member.fromMap(jsonDecode(e) as Map<String, dynamic>))
+              .toList();
       attendance.addListener(() {
         SettingsManager.getInstance.prefs?.setStringList(
           'cached.members',
-          attendance.value
-              .map((e) => jsonEncode(e.toMap()))
-              .toList(),
+          attendance.value.map((e) => jsonEncode(e.toMap())).toList(),
         );
       });
     }
@@ -393,7 +397,9 @@ class AttendanceTrackerBackend {
     activeCooldownTimer = RestartableTimer(activeCooldownDuration!, () {
       pullDuration = pullDurationInactive;
       pushDuration = pushDurationInactive;
-      logger.d("Switched to inactive sync intervals: pull=${pullDuration!.inSeconds}s, push=${pushDuration!.inSeconds}s");
+      logger.d(
+        "Switched to inactive sync intervals: pull=${pullDuration!.inSeconds}s, push=${pushDuration!.inSeconds}s",
+      );
     });
 
     // try to init google
@@ -452,23 +458,19 @@ class AttendanceTrackerBackend {
     if (_memberFetchTimer != null) {
       _memberFetchTimer!.cancel();
     }
-    _memberFetchTimer = AdjustableRestartableTimer(
-      () async {
-        await _waitUntilQueuesEmpty();
-        await _updateMembers();
-        _memberFetchTimer?.restartWith(pullDuration!);
-      },
-    );
+    _memberFetchTimer = AdjustableRestartableTimer(() async {
+      await _waitUntilQueuesEmpty();
+      await _updateMembers();
+      _memberFetchTimer?.restartWith(pullDuration!);
+    });
     if (_updateTimer != null) {
       _updateTimer!.cancel();
     }
-    _updateTimer = AdjustableRestartableTimer(
-      () async {
-        await _update();
-        await _updateLog();
-        _updateTimer?.restartWith(pushDuration!);
-      },
-    );
+    _updateTimer = AdjustableRestartableTimer(() async {
+      await _update();
+      await _updateLog();
+      _updateTimer?.restartWith(pushDuration!);
+    });
     _updateMembers(); // no await = schedule for background
   }
 
@@ -583,8 +585,11 @@ class AttendanceTrackerBackend {
     List<Member> newMembers = [];
     for (List<dynamic> googleMember in membersTableResponse.values!) {
       // ID, Name, Privilege, Status, Location
-      if (googleMember.length != 5 && googleMember.length != 6) { // password fields may or may not be present
-        logger.w("Malformed user detected, skipping user addition, expected 5 or 6 fields, got ${googleMember.length}");
+      if (googleMember.length != 5 && googleMember.length != 6) {
+        // password fields may or may not be present
+        logger.w(
+          "Malformed user detected, skipping user addition, expected 5 or 6 fields, got ${googleMember.length}",
+        );
         continue;
       }
       newMembers.add(
@@ -1166,6 +1171,9 @@ class AttendanceTrackerBackend {
     _updatesQueue.add(event);
     while (_updatesQueue.contains(event)) {
       await Future.delayed(const Duration(milliseconds: 100));
+      await _update();
+      await _waitUntilQueuesEmpty();
+      await _updateMembers();
     }
 
     _reactivateCooldown();
@@ -1186,6 +1194,8 @@ class AttendanceTrackerBackend {
       _memberFetchTimer?.restartWith(pullDuration!);
     }
     activeCooldownTimer?.reset();
-    logger.d("Switched to active sync intervals: pull=${pullDuration!.inSeconds}s, push=${pushDuration!.inSeconds}s");
+    logger.d(
+      "Switched to active sync intervals: pull=${pullDuration!.inSeconds}s, push=${pushDuration!.inSeconds}s",
+    );
   }
 }
