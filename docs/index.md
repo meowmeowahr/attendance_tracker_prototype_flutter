@@ -1,12 +1,13 @@
 # _SECOND_
+![icon_144.png](media/logos/icon_144.png)
 
 ## Install
 
 ### Supported Platforms
-* Raspberry Pi (via Kiosk Installer)
-* Android (Play Store or APK)
-* iPadOS (App Store)
-* Web (via GitHub Pages, older versions will **NOT** remain accessible)
+* Raspberry Pi (via [Kiosk Installer](install/rpi.md))
+* [Android](install/android.md) ([APK](https://github.com/meowmeowahr/attendance_tracker_prototype_flutter/releases/latest))
+* iPadOS (coming soon)
+* [Web](https://meowmeowahr.github.io/attendance_tracker_prototype_flutter/app) (via GitHub Pages, older versions will **NOT** remain accessible)
 
 ### Development Platforms
 
